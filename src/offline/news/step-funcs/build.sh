@@ -49,10 +49,6 @@ item-new
 #item-new-assembled
 train-model
 overall
-item-new-personalize
-user-new-personalize
-train-model-personalize
-overall-personalize
 )
 
 for name in ${all_stepfuncs[@]};
