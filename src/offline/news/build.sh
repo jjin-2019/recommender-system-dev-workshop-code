@@ -55,6 +55,7 @@ rank-batch
 filter-batch
 assembled/data-preprocessing
 assembled/train-model
+personalize-step-funcs
 )
 
 total_size=${#steps[*]}

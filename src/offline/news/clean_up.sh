@@ -52,6 +52,10 @@ echo "1. Delete step-funcs"
 cd $curr_dir/step-funcs
 ./clean_up.sh
 
+echo "Delete personalize-step-funcs"
+cd $curr_dir/personalize-step-funcs
+./clean_up.sh
+
 cd $curr_dir
 
 echo "2. Delete ECR repositories ..."
