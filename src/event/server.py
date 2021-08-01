@@ -40,7 +40,7 @@ MANDATORY_ENV_VARS = {
     'POD_NAMESPACE': 'default',
     'TEST': 'False',
     'USE_PERSONALIZE_PLUGIN': 'False',
-    'PERSONALIZE_RECIPE': 'user-personalize'
+    'PERSONALIZE_RECIPE': 'user-personalization'
 }
 
 
@@ -183,9 +183,11 @@ class StateMachineStatusResponse(BaseModel):
     detailUrl: str
     executionArn: str
 
+
 class UserEntity(BaseModel):
     user_id: str
     user_sex: str
+
 
 def gen_simple_response(message):
     res = SimpleResponse(
@@ -239,7 +241,7 @@ def recall_post(user_id: str, clickItemList: ClickedItemList):
         request.value = json.dumps(data).encode('utf-8')
         logging.info('Invoke personalize plugin to trigger event tracker...')
         eventTrackerRequest = service_pb2.EventTrackerRequest(apiVersion='v1', metadata='Event',
-                                                                      type='EventTracker')
+                                                              type='EventTracker')
         eventTrackerRequest.requestBody.Pack(request)
         channel = grpc.insecure_channel('localhost:50051')
         stub = service_pb2_grpc.EventStub(channel)
@@ -338,15 +340,41 @@ def start_step_funcs(trainReq):
         stateMachineArn, trainReq))
 
     try:
-        res = step_funcs.start_execution(
-            stateMachineArn=stateMachineArn,
-            name="{}-{}".format(trainReq.change_type[0].lower(), uuid.uuid1()),
-            input=json.dumps({
-                'change_type': trainReq.change_type,
-                'Bucket': bucket,
-                'S3Prefix': key_prefix
-            })
-        )
+        if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == True and MANDATORY_ENV_VARS['PERSONALIZE_RECIPE'] == 'user-personalization':
+            res = step_funcs.start_execution(
+                stateMachineArn=stateMachineArn,
+                name="{}-{}".format(trainReq.change_type[0].lower(), uuid.uuid1()),
+                input=json.dumps({
+                    'change_type': trainReq.change_type,
+                    'Bucket': bucket,
+                    'S3Prefix': key_prefix,
+                    "DatasetGroupName": "GCR-RS-News-Dataset-Group",
+                    'SolutionName': "userPersonalizeSolutionNew",
+                    'TrainingMode': "UPDATE"
+                })
+            )
+        elif MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == True and MANDATORY_ENV_VARS['PERSONALIZE_RECIPE'] == 'rerank':
+            res = step_funcs.start_execution(
+                stateMachineArn=stateMachineArn,
+                name="{}-{}".format(trainReq.change_type[0].lower(), uuid.uuid1()),
+                input=json.dumps({
+                    'change_type': trainReq.change_type,
+                    'Bucket': bucket,
+                    'S3Prefix': key_prefix,
+                    "DatasetGroupName": "GCR-RS-News-Dataset-Group",
+                    'SolutionName': "rankingSolution"
+                })
+            )
+        else:
+            res = step_funcs.start_execution(
+                stateMachineArn=stateMachineArn,
+                name="{}-{}".format(trainReq.change_type[0].lower(), uuid.uuid1()),
+                input=json.dumps({
+                    'change_type': trainReq.change_type,
+                    'Bucket': bucket,
+                    'S3Prefix': key_prefix
+                })
+            )
     except Exception as e:
         logging.error(repr(e))
         raise RSAWSServiceException(repr(e))
@@ -402,6 +430,10 @@ def get_step_funcs_name():
     s3bucket = MANDATORY_ENV_VARS['S3_BUCKET']
     if '-dev-workshop-' in s3bucket and namespace == 'rs-news-dev-ns':
         step_funcs_name = 'rs-dev-workshop-News-OverallStepFunc'
+
+    # change for personalize plugin
+    if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
+        step_funcs_name = "rs-dev-workshop-News-OverallStepFunc-Personalize"
 
     logging.info("get_step_funcs_name return: namespace: {}, step funcs name: {}".format(namespace, step_funcs_name))
     return step_funcs_name
