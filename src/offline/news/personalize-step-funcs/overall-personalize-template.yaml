@@ -145,6 +145,7 @@ Resources:
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
                   "DatasetGroupName.$": "$.DatasetGroupName",
+                  "DatasetName.$": "$.InteractionDatasetName",
                   "SolutionName.$": "$.SolutionName",
                   "TrainingMode.$": "$.TrainingMode"
                 },
