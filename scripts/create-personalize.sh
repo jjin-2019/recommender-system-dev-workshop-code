@@ -1,10 +1,77 @@
 #!/usr/bin/env bash
 set -e
 
+curr_dir=$(pwd)
+
+Stage=$1
+if [[ -z $Stage ]];then
+  Stage='dev-workshop'
+fi
+
+AWS_CMD="aws"
+if [[ -n $PROFILE ]]; then
+  AWS_CMD="aws --profile $PROFILE"
+fi
+
+if [[ -z $REGION ]];then
+    REGION='ap-northeast-1'
+fi
+
+echo "Stage=$Stage"
+echo "REGION=$REGION"
+
+AWS_ACCOUNT_ID=$($AWS_CMD sts get-caller-identity  --o text | awk '{print $1}')
+
+if [[ $? -ne 0 ]]; then
+  echo "error!!! can not get your AWS_ACCOUNT_ID"
+  exit 1
+fi
+
+echo "AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID"
+
+# #delete dataset group
+# datasetGroupArn="arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:dataset-group/GCR-RS-News-UserPersonalize-Dataset-Group"
+# aws personalize delete-dataset-group --dataset-group-arn ${datasetGroupArn} > /dev/null 2>&1 || true
+
 #create dataset group
 datasetGroupArn=$(aws personalize create-dataset-group --name GCR-RS-News-Dataset-Group --output text)
 echo "dataset_Group_Arn: ${datasetGroupArn}"
 echo "......"
+
+#monitor dataset group 
+echo "Dataset Group Creating... It will takes no longer than 5 min..."
+MAX_TIME=`expr 10 \* 60` # 10 min
+CURRENT_TIME=0
+while(( ${CURRENT_TIME} < ${MAX_TIME} )) 
+do
+    dataset_group_status=$(aws personalize describe-dataset-group \
+                --dataset-group-arn ${datasetGroupArn} | jq '.datasetGroup.status' -r)
+
+    echo "dataset_group_status: ${dataset_group_status}"
+    
+    if [ "$dataset_group_status" = "CREATE FAILED" ]
+    then
+        echo "!!!Dataset Group Create Failed!!!"
+        echo "!!!Personalize Service Create Failed!!!"
+        exit 8
+    elif [ "$dataset_group_status" = "ACTIVE" ]
+    then
+        echo "Dataset Group Create successfully!"
+        break
+    fi
+    
+    CURRENT_TIME=`expr ${CURRENT_TIME} + 10`
+    echo "wait for 10 second..."
+    sleep 10
+
+done
+
+if [ $CURRENT_TIME -ge $MAX_TIME ]
+then
+    echo "Dataset Group Create Time exceed 10 min, please delete import job and try again!"
+    exit 8
+fi
+
 
 # #for test
 # datasetGroupArn="arn:aws:personalize:ap-northeast-1:466154167985:dataset-group/GCR-RS-News-UserPersonalize-Dataset-Group"
@@ -12,9 +79,9 @@ echo "......"
 
 #delete exist schema
 echo "deleting Schema..."
-aws personalize delete-schema --schema-arn "arn:aws:personalize:ap-northeast-1:466154167985:schema/NewsUserSchema"
-aws personalize delete-schema --schema-arn "arn:aws:personalize:ap-northeast-1:466154167985:schema/NewsItemSchema"
-aws personalize delete-schema --schema-arn "arn:aws:personalize:ap-northeast-1:466154167985:schema/NewsInteractionSchema"
+aws personalize delete-schema --schema-arn "arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:schema/NewsUserSchema" > /dev/null 2>&1 || true
+aws personalize delete-schema --schema-arn "arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:schema/NewsItemSchema" > /dev/null 2>&1 || true
+aws personalize delete-schema --schema-arn "arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:schema/NewsInteractionSchema" > /dev/null 2>&1 || true
 
 sleep 10
 
@@ -102,22 +169,6 @@ fi
 
 
 #Get Bucket Name
-Stage=$1
-if [[ -z $Stage ]];then
-  Stage='dev-workshop'
-fi
-
-AWS_CMD="aws"
-if [[ -n $PROFILE ]]; then
-  AWS_CMD="aws --profile $PROFILE"
-fi
-
-if [[ -z $REGION ]];then
-    REGION='ap-northeast-1'
-fi
-
-AWS_ACCOUNT_ID=$($AWS_CMD  sts get-caller-identity  --o text | awk '{print $1}')
-echo "AWS_ACCOUNT_ID: ${AWS_ACCOUNT_ID}"
 
 BUCKET_BUILD=aws-gcr-rs-sol-${Stage}-${REGION}-${AWS_ACCOUNT_ID}
 
