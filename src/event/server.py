@@ -348,9 +348,9 @@ def start_step_funcs(trainReq):
                     'change_type': trainReq.change_type,
                     'Bucket': bucket,
                     'S3Prefix': key_prefix,
-                    "DatasetGroupName": "GCR-RS-News-Dataset-Group",
-                    'SolutionName': "userPersonalizeSolutionNew",
-                    'TrainingMode': "UPDATE"
+                    'DatasetGroupName': 'GCR-RS-News-Dataset-Group',
+                    'SolutionName': 'userPersonalizeSolutionNew',
+                    'TrainingMode': 'UPDATE'
                 })
             )
         elif MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == True and MANDATORY_ENV_VARS['PERSONALIZE_RECIPE'] == 'rerank':
@@ -361,8 +361,8 @@ def start_step_funcs(trainReq):
                     'change_type': trainReq.change_type,
                     'Bucket': bucket,
                     'S3Prefix': key_prefix,
-                    "DatasetGroupName": "GCR-RS-News-Dataset-Group",
-                    'SolutionName': "rankingSolution"
+                    'DatasetGroupName': 'GCR-RS-News-Dataset-Group',
+                    'SolutionName': 'rankingSolution'
                 })
             )
         else:
