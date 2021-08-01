@@ -62,6 +62,7 @@ projects_dir=(
   "news/rank-batch"
   "news/recall-batch"
   "news/step-funcs"
+  "news/personalize-step-funcs"
 )
 
 for project in ${projects_dir[@]}; do

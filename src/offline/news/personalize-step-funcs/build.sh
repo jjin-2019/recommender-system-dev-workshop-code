@@ -41,14 +41,10 @@ PARAMETER_OVERRIDES="Bucket=$BUCKET S3Prefix=$S3Prefix Stage=$Stage"
 echo PARAMETER_OVERRIDES:$PARAMETER_OVERRIDES
 
 all_stepfuncs=(
-steps
-dashboard
-batch-update
-user-new
-item-new
-#item-new-assembled
-train-model
-overall
+item-new-personalize
+user-new-personalize
+train-model-personalize
+overall-personalize
 )
 
 for name in ${all_stepfuncs[@]};
@@ -82,6 +78,12 @@ do
 
     StackStatus=$($AWS_CMD  cloudformation  describe-stacks --region ${REGION} --stack-name ${STACK_NAME} --output table | grep StackStatus)
     echo ${StackStatus} |  egrep "(CREATE_COMPLETE)|(UPDATE_COMPLETE)" > /dev/null
+
+#    if [[ $? -ne 0 ]]; then
+#        echo "error  ${StackStatus}"
+#        exit 1
+#    fi
+
 
     rm tmp_*.yaml > /dev/null 2>&1 || true
 
