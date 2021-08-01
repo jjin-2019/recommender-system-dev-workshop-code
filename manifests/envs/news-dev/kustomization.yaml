@@ -25,10 +25,10 @@ images:
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/demo
   newTag: 6926702d3b00b59abde19cd72de823756717b510
 - name: rs/event
-  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/event
+  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/event
   newTag: 6926702d3b00b59abde19cd72de823756717b510
 - name: rs/event-plugin
-  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/event-plugin
+  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/event-plugin
   newTag: news-personalize-6926702d3b00b59abde19cd72de823756717b510
 - name: rs/filter
   newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/filter
