@@ -40,7 +40,6 @@ Resources:
       DefinitionString: !Sub |
         {
           "StartAt": "Action processing",
-          "TimeoutSeconds": 36000,
           "States": {
             "Action processing": {
               "Type": "Task",

@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-    (SO8010)
+  (SO8010)
 
-    CloudFormation for RecSys StepFuncs
+  CloudFormation for RecSys StepFuncs
 
 
 Parameters:
@@ -35,20 +35,12 @@ Parameters:
     Type: String
     Default: CreateDatasetImportJobLambda
 
-  UpdateSolutionVersionLambda:
-    Type: String
-    Default: UpdateSolutionVersionLambda
-
-  UpdateCampaignLambda:
-    Type: String
-    Default: UpdateCampaignLambda
-
 Resources:
-  TrainModelStepFuncPersonalize:
+  UserNewStepFuncPersonalize:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}"
-      StateMachineName: !Sub rs-${Stage}-News-TrainModelStepFunc-Personalize
+      StateMachineName: !Sub rs-${Stage}-News-UserNewStepFunc-Personalize
       DefinitionString: !Sub |
         {
           "StartAt": "Pre check",
@@ -63,7 +55,7 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "file_list": [
-                    "system/personalize-data/personalize_interactions.csv"
+                    "system/personalize-data/personalize_user.csv"
                   ]
                 }
               },
@@ -71,9 +63,9 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.Precheck",
-              "Next": "Create Interaction Dataset Import Job"
+              "Next": "Create User Dataset Import Job"
             },
-            "Create Interaction Dataset Import Job": {
+            "Create User Dataset Import Job": {
               "Type": "Task",
               "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
@@ -83,46 +75,12 @@ Resources:
                   "prefix.$": "$.S3Prefix",
                   "datasetGroupName.$": "$.DatasetGroupName",
                   "datasetName.$": "$.DatasetName"
-                },
+                }
               },
               "ResultSelector": {
                 "Payload.$": "$.Payload"
               },
-              "ResultPath": "$.CreateInteractionDatasetImportJob",
-              "Next": "Update Solution Version"
-            },
-            "Update Solution Version": {
-              "Type": "Task",
-              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "rs-${Stage}-${UpdateSolutionVersionLambda}",
-                "Payload": {
-                  "datasetGroupName.$": "$.DatasetGroupName",
-                  "solutionName.$": "$.SolutionName",
-                  "trainingMode.$": "$.TrainingMode"
-                },
-              },
-              "ResultSelector": {
-                "Payload.$": "$.Payload"
-              },
-              "ResultPath": "$.UpdateSolutionVersion",
-              "Next": "Update Campaign"
-            },
-            "Update Campaign": {
-              "Type": "Task",
-              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "rs-${Stage}-${UpdateCampaignLambda}",
-                "Payload": {
-                  "datasetGroupName.$": "$.DatasetGroupName",
-                  "solutionName.$": "$.SolutionName",
-                  "trainingMode.$": "$.TrainingMode"
-                },
-              },
-              "ResultSelector": {
-                "Payload.$": "$.Payload"
-              },
-              "ResultPath": "$.UpdateCampaign",
+              "ResultPath": "$.CreateUserDatasetImportJob",
               "Next": "Succeed"
             },
             "Succeed": {
@@ -130,4 +88,3 @@ Resources:
             }
           }
         }
-

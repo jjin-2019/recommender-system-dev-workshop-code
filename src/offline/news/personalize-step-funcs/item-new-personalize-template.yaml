@@ -44,7 +44,6 @@ Resources:
       DefinitionString: !Sub |
         {
           "StartAt": "Pre check",
-          "TimeoutSeconds": 36000,
           "States": {
             "Pre check": {
               "Type": "Task",
@@ -75,7 +74,7 @@ Resources:
                   "prefix.$": "$.S3Prefix",
                   "datasetGroupName.$": "$.DatasetGroupName",
                   "datasetName.$": "$.DatasetName"
-                },
+                }
               },
               "ResultSelector": {
                 "Payload.$": "$.Payload"

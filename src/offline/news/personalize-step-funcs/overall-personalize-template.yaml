@@ -95,8 +95,8 @@ Resources:
                 "Input": {
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
-                  "DatasetGroupName.$": "$.DatasetGroupName"
+                  "S3Prefix.$": "$.S3Prefix",
+                  "DatasetGroupName.$": "$.DatasetGroupName",
                   "SolutionName.$": "$.SolutionName"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-BatchUpdateStepFunc",
@@ -112,7 +112,7 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName"
+                  "DatasetGroupName.$": "$.DatasetGroupName",
                   "DatasetName.$": "$.UserDatasetName"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-UserNewStepFunc-Personalize",
@@ -127,8 +127,8 @@ Resources:
                 "Input": {
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
-                  "DatasetGroupName.$": "$.DatasetGroupName"
+                  "S3Prefix.$": "$.S3Prefix",
+                  "DatasetGroupName.$": "$.DatasetGroupName",
                   "DatasetName.$": "$.ItemDatasetName"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-ItemNewStepFunc-Personalize",
@@ -143,9 +143,9 @@ Resources:
                 "Input": {
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
-                  "DatasetGroupName.$": "$.DatasetGroupName"
-                  "SolutionName.$": "$.SolutionName"
+                  "S3Prefix.$": "$.S3Prefix",
+                  "DatasetGroupName.$": "$.DatasetGroupName",
+                  "SolutionName.$": "$.SolutionName",
                   "TrainingMode.$": "$.TrainingMode"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-TrainModelStepFunc-Personalize",
