@@ -52,6 +52,7 @@ Resources:
       DefinitionString: !Sub |
         {
           "StartAt": "Pre check",
+          "TimeoutSeconds": 36000,
           "States": {
             "Pre check": {
               "Type": "Task",
@@ -115,7 +116,8 @@ Resources:
                 "Payload": {
                   "datasetGroupName.$": "$.DatasetGroupName",
                   "solutionName.$": "$.SolutionName",
-                  "trainingMode.$": "$.TrainingMode"
+                  "trainingMode.$": "$.TrainingMode",
+                  "updateSolutionVersion.$": "$.UpdateSolutionVersion"
                 }
               },
               "ResultSelector": {

@@ -39,7 +39,7 @@ def do_handler(event, context):
 
     dataset_group_name = event['datasetGroupName']
     solution_name = event['solutionName']
-    training_mode = event['trainingMode']
+    update_solution_version = event['updateSolutionVersion']
 
     dataset_group_arn = get_dataset_group_arn(dataset_group_name)
     print("dataset_group_arn:{}".format(dataset_group_arn))
@@ -47,12 +47,15 @@ def do_handler(event, context):
     solution_arn = get_solution_arn(dataset_group_arn, solution_name)
     print("solution_arn:{}".format(solution_arn))
 
-    solution_version_arn = update_solution_version(solution_arn, training_mode)
+    solution_version_arn = update_solution_version['body']['updateSolutionVersionArn']
     print("solution_version_arn:{}".format(solution_arn))
 
-    if solution_name == "userPersonalizeSolutionNew":
+    if solution_version_arn == "":
+        return error_response("Error! Update Solution Version step failed!")
+
+    if solution_name == "rankingSolution":
         campaign_name = "gcr-rs-dev-workshop-news-ranking-campaign"
-    elif solution_name == "userPersonalizeSolutionNew":
+    elif solution_name == "userPersonalizeSolution":
         campaign_name = "gcr-rs-dev-workshop-news-UserPersonalize-campaign"
     else:
         return error_response("invalid solution name")
@@ -96,12 +99,13 @@ def get_dataset_group_arn(dataset_group_name):
             return dataset_group["datasetGroupArn"]
 
 
-def update_solution_version(solution_arn, training_mode):
-    response = personalize.create_solution_version(
-        solutionArn=solution_arn,
-        trainingMode=training_mode
+def get_solution_version_arn(solution_arn):
+    response = personalize.list_solution_versions(
+        solutionArn=solution_arn
     )
-    return response["solutionVersionArn"]
+    for solution_version in response["solutionVersions"]:
+        if solution_version["status"] == "ACTIVE":
+            return solution_version["solutionVersionArn"]
 
 
 def get_campaign_arn(solution_arn, campaign_name):

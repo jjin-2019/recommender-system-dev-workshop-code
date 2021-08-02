@@ -59,13 +59,19 @@ def do_handler(event, context):
         print("SolutionVersion: {}".format(status))
 
         if status == "ACTIVE":
-            return success_response("Update Solution Version Success!")
+            return success_response(json.dumps({
+                "updateSolutionVersionArn": solution_version_arn
+            }))
         elif status == "CREATE FAILED":
-            return error_response("Update Solution Version Failed!")
+            return error_response(json.dumps({
+                "updateSolutionVersionArn": ""
+            }))
         else:
             time.sleep(60)
 
-    return error_response("DatasetImportJob Create exceed max time")
+    return error_response(json.dumps({
+                "updateSolutionVersionArn": ""
+            }))
 
 
 def get_solution_arn(dataset_group_arn, solution_name):
