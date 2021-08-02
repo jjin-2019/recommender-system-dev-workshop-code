@@ -237,22 +237,7 @@ def recall_post(user_id: str, clickItemList: ClickedItemList):
     }
 
     if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
-        request = any_pb2.Any()
-        request.value = json.dumps(data).encode('utf-8')
-        logging.info('Invoke personalize plugin to trigger event tracker...')
-        eventTrackerRequest = service_pb2.EventTrackerRequest(apiVersion='v1', metadata='Event',
-                                                              type='EventTracker')
-        eventTrackerRequest.requestBody.Pack(request)
-        channel = grpc.insecure_channel('localhost:50051')
-        stub = service_pb2_grpc.EventStub(channel)
-        response = stub.EventTracker(eventTrackerRequest)
-
-        if response.code == 0:
-            logging.info("----------event tracker from personalize plugin successful.")
-            message = response.description
-        else:
-            logging.info("----------event tracker from personalize plugin failed.")
-            message = "event tracker from personalize plugin failed."
+        message = send_event_to_personalize(data)
     else:
         message = send_post_request(recall_svc_url, data)
 
@@ -327,6 +312,25 @@ def add_new_user(userEntity: UserEntity):
         message = "add user to AWS Personalize Service failed."
 
     return gen_simple_response(message)
+
+
+def send_event_to_personalize(data):
+    request = any_pb2.Any()
+    request.value = json.dumps(data).encode('utf-8')
+    logging.info('Invoke personalize plugin to trigger event tracker...')
+    eventTrackerRequest = service_pb2.EventTrackerRequest(apiVersion='v1', metadata='Event',
+                                                          type='EventTracker')
+    eventTrackerRequest.requestBody.Pack(request)
+    channel = grpc.insecure_channel('localhost:50051')
+    stub = service_pb2_grpc.EventStub(channel)
+    response = stub.EventTracker(eventTrackerRequest)
+
+    if response.code == 0:
+        logging.info("----------event tracker from personalize plugin successful.")
+        return response.description
+    else:
+        logging.info("----------event tracker from personalize plugin failed.")
+        return "event tracker from personalize plugin failed."
 
 
 def start_step_funcs(trainReq):
