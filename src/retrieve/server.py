@@ -125,29 +125,7 @@ def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId
     logging.info("retrieve_get_v2() enter")
     item_list = []
     if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
-        request = any_pb2.Any()
-        request.value = json.dumps({
-            'user_id': user_id,
-            'recommend_type': recommendType
-        }).encode('utf-8')
-        logging.info('Invoke personalize plugin to get recommend data...')
-        getRecommendDataRequest = service_pb2.GetRecommendDataRequest(apiVersion='v1', metadata='Retrieve',
-                                                                type='RecommendResult')
-        getRecommendDataRequest.requestBody.Pack(request)
-        channel = grpc.insecure_channel('localhost:50051')
-        stub = service_pb2_grpc.RetrieveStub(channel)
-        response = stub.GetRecommendData(getRecommendDataRequest)
-
-        results = any_pb2.Any()
-        response.results.Unpack(results)
-        resultJson = json.loads(results.value, encoding='utf-8')
-        logging.info("-------------------get result from personalize plugin:{}".format(resultJson))
-        if response.code == 0:
-            logging.info("----------get data from personalize plugin successful.")
-            item_list = resultJson['data']
-        else:
-            logging.info("----------get data from personalize plugin failed.")
-
+        item_list = get_recommend_from_personalize(user_id, recommendType)
     else:
         logging.info('send request to filter to get recommend data...')
         host = MANDATORY_ENV_VARS['FILTER_HOST']
@@ -222,6 +200,32 @@ def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId
 #
 #     logging.info("rs_list: {}".format(rs_list))
 #     return rs_list
+
+
+def get_recommend_from_personalize(user_id, recommendType):
+    request = any_pb2.Any()
+    request.value = json.dumps({
+        'user_id': user_id,
+        'recommend_type': recommendType
+    }).encode('utf-8')
+    logging.info('Invoke personalize plugin to get recommend data...')
+    getRecommendDataRequest = service_pb2.GetRecommendDataRequest(apiVersion='v1', metadata='Retrieve',
+                                                                  type='RecommendResult')
+    getRecommendDataRequest.requestBody.Pack(request)
+    channel = grpc.insecure_channel('localhost:50051')
+    stub = service_pb2_grpc.RetrieveStub(channel)
+    response = stub.GetRecommendData(getRecommendDataRequest)
+
+    results = any_pb2.Any()
+    response.results.Unpack(results)
+    resultJson = json.loads(results.value, encoding='utf-8')
+    logging.info("get recommend from personalize plugin:{}".format(resultJson))
+    if response.code == 0:
+        logging.info("get data from personalize plugin successful.")
+        return resultJson['data']
+    else:
+        logging.info("get data from personalize plugin failed.")
+        return []
 
 
 def init():
