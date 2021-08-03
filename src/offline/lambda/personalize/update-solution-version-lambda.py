@@ -1,6 +1,5 @@
 import json
 import os
-import time
 import boto3
 
 print('Loading function')
@@ -13,11 +12,7 @@ def init():
     config = config.Config(**my_config)
 
     global personalize
-    global personalize_runtime
-    global personalize_events
     personalize = boto3.client('personalize', config=config)
-    personalize_runtime = boto3.client('personalize-runtime', config=config)
-    personalize_events = boto3.client(service_name='personalize-events', config=config)
 
 
 def lambda_handler(event, context):
@@ -30,13 +25,7 @@ def lambda_handler(event, context):
         raise e
 
 
-stage = "dev"
-
-
 def do_handler(event, context):
-    global stage
-    stage = os.environ.get('Stage', 'dev')
-
     dataset_group_name = event['datasetGroupName']
     solution_name = event['solutionName']
     training_mode = event['trainingMode']
@@ -47,31 +36,17 @@ def do_handler(event, context):
     solution_arn = get_solution_arn(dataset_group_arn, solution_name)
     print("solution_arn:{}".format(solution_arn))
 
-    solution_version_arn = update_solution_version(solution_arn, training_mode)
-    print("solution_version_arn:{}".format(solution_arn))
+    response = personalize.create_solution_version(
+        solutionArn=solution_arn,
+        trainingMode=training_mode
+    )
 
-    max_time = time.time() + 3 * 60 * 60  # 3 hours
-    while time.time() < max_time:
-        describe_solution_version_response = personalize.describe_solution_version(
-            solutionVersionArn=solution_version_arn
-        )
-        status = describe_solution_version_response["solutionVersion"]["status"]
-        print("SolutionVersion: {}".format(status))
+    solution_version_arn = response["solutionVersionArn"]
+    print("solution_version_arn:{}".format(solution_version_arn))
 
-        if status == "ACTIVE":
-            return success_response(json.dumps({
-                "updateSolutionVersionArn": solution_version_arn
-            }))
-        elif status == "CREATE FAILED":
-            return error_response(json.dumps({
-                "updateSolutionVersionArn": ""
-            }))
-        else:
-            time.sleep(60)
-
-    return error_response(json.dumps({
-                "updateSolutionVersionArn": ""
-            }))
+    return success_response(json.dumps({
+        "solution_version_arn": solution_version_arn
+    }))
 
 
 def get_solution_arn(dataset_group_arn, solution_name):
@@ -88,14 +63,6 @@ def get_dataset_group_arn(dataset_group_name):
     for dataset_group in response["datasetGroups"]:
         if dataset_group["name"] == dataset_group_name:
             return dataset_group["datasetGroupArn"]
-
-
-def update_solution_version(solution_arn, training_mode):
-    response = personalize.create_solution_version(
-        solutionArn=solution_arn,
-        trainingMode=training_mode
-    )
-    return response["solutionVersionArn"]
 
 
 def success_response(message):

@@ -4,7 +4,7 @@ import os
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-
+import time
 import boto3
 import requests
 import uvicorn as uvicorn
@@ -13,15 +13,15 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-import service_pb2
-import service_pb2_grpc
-from google.protobuf import any_pb2
-import grpc
 
 app = FastAPI()
 api_router = APIRouter()
 
 s3client = boto3.client('s3')
+personalize = boto3.client('personalize')
+personalize_runtime = boto3.client('personalize-runtime')
+personalize_events = boto3.client('personalize-events')
+
 
 step_funcs = None
 account_id = ''
@@ -227,10 +227,7 @@ def portrait_post(user_id: str, clickItem: ClickedItem):
 
 
 @api_router.post('/api/v1/event/recall/{user_id}', response_model=SimpleResponse, tags=["event"])
-def recall_post(user_id: str, clickItemList: ClickedItemList):
-    host = MANDATORY_ENV_VARS['RECALL_HOST']
-    port = MANDATORY_ENV_VARS['RECALL_PORT']
-    recall_svc_url = "http://{}:{}/recall/process".format(host, port)
+def online_inference(user_id: str, clickItemList: ClickedItemList):
     data = {
         'user_id': user_id,
         'clicked_item_ids': [item.id for item in clickItemList.clicked_item_list]
@@ -239,7 +236,7 @@ def recall_post(user_id: str, clickItemList: ClickedItemList):
     if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
         message = send_event_to_personalize(data)
     else:
-        message = send_post_request(recall_svc_url, data)
+        message = send_event_to_default(data)
 
     res = gen_simple_response(message)
     return res
@@ -249,9 +246,6 @@ def recall_post(user_id: str, clickItemList: ClickedItemList):
 def start_train_post(trainReq: TrainRequest):
     if trainReq.change_type not in ['MODEL', 'CONTENT', 'ACTION']:
         raise HTTPException(status_code=405, detail="invalid change_type")
-
-    # if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
-
     res = start_step_funcs(trainReq)
     return res
 
@@ -287,50 +281,44 @@ def offline_status_get(exec_arn: str):
 @api_router.post('/api/v1/event/add_user/{user_id}', response_model=SimpleResponse, tags=["event"])
 def add_new_user(userEntity: UserEntity):
     logging.info("Add new user to AWS Personalize Service...")
-    user_id = userEntity.user_id
-    user_sex = userEntity.user_sex
-    logging.info("New User Id:{}, Sex:{}".format(user_id, user_sex))
+    personalize_events.put_users(
+        datasetArn=user_dataset_arn,
+        users=[
+            {
+                'userId': userEntity.user_id,
+                'properties': str({
+                    'gender': userEntity.user_sex
+                })
+            },
+        ]
+    )
+    return gen_simple_response('OK')
 
-    request = any_pb2.Any()
-    request.value = json.dumps({
-        'userId': user_id,
-        'gender': user_sex
-    }).encode('utf-8')
-    logging.info('Invoke personalize plugin to add new user...')
-    addNewUserRequest = service_pb2.AddNewUserRequest(apiVersion='v1',metadata='Event',
-                                                      type='AddNewUser')
-    addNewUserRequest.requestBody.Pack(request)
-    channel = grpc.insecure_channel('localhost:50051')
-    stub = service_pb2_grpc.EventStub(channel)
-    response = stub.AddNewUser(addNewUserRequest)
 
-    if response.code == 0:
-        logging.info("add user to AWS Personalize Service successful.")
-        message = response.description
-    else:
-        logging.info("add user to AWS Personalize Service failed.")
-        message = "add user to AWS Personalize Service failed."
-
-    return gen_simple_response(message)
+def send_event_to_default(data):
+    host = MANDATORY_ENV_VARS['RECALL_HOST']
+    port = MANDATORY_ENV_VARS['RECALL_PORT']
+    recall_svc_url = "http://{}:{}/recall/process".format(host, port)
+    return send_post_request(recall_svc_url, data)
 
 
 def send_event_to_personalize(data):
-    request = any_pb2.Any()
-    request.value = json.dumps(data).encode('utf-8')
-    logging.info('Invoke personalize plugin to trigger event tracker...')
-    eventTrackerRequest = service_pb2.EventTrackerRequest(apiVersion='v1', metadata='Event',
-                                                          type='EventTracker')
-    eventTrackerRequest.requestBody.Pack(request)
-    channel = grpc.insecure_channel('localhost:50051')
-    stub = service_pb2_grpc.EventStub(channel)
-    response = stub.EventTracker(eventTrackerRequest)
-
-    if response.code == 0:
-        logging.info("----------event tracker from personalize plugin successful.")
-        return response.description
-    else:
-        logging.info("----------event tracker from personalize plugin failed.")
-        return "event tracker from personalize plugin failed."
+    try:
+        for item_id in data['clicked_item_ids']:
+            personalize_events.put_events(
+                trackingId=event_tracker_id,
+                userId=data['user_id'],
+                sessionId=data['user_id'],
+                eventList=[{
+                    'sentAt': int(time.time()),
+                    'itemId': item_id,
+                    'eventType': 'CLICK'
+                }]
+            )
+    except Exception as e:
+        logging.error(repr(e))
+        raise RSAWSServiceException(repr(e))
+    return "OK"
 
 
 def start_step_funcs(trainReq):
@@ -344,41 +332,15 @@ def start_step_funcs(trainReq):
         stateMachineArn, trainReq))
 
     try:
-        if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == True and MANDATORY_ENV_VARS['PERSONALIZE_RECIPE'] == 'user-personalization':
-            res = step_funcs.start_execution(
-                stateMachineArn=stateMachineArn,
-                name="{}-{}".format(trainReq.change_type[0].lower(), uuid.uuid1()),
-                input=json.dumps({
-                    'change_type': trainReq.change_type,
-                    'Bucket': bucket,
-                    'S3Prefix': key_prefix,
-                    'DatasetGroupName': 'GCR-RS-News-Dataset-Group',
-                    'SolutionName': 'userPersonalizeSolutionNew',
-                    'TrainingMode': 'UPDATE'
-                })
-            )
-        elif MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == True and MANDATORY_ENV_VARS['PERSONALIZE_RECIPE'] == 'rerank':
-            res = step_funcs.start_execution(
-                stateMachineArn=stateMachineArn,
-                name="{}-{}".format(trainReq.change_type[0].lower(), uuid.uuid1()),
-                input=json.dumps({
-                    'change_type': trainReq.change_type,
-                    'Bucket': bucket,
-                    'S3Prefix': key_prefix,
-                    'DatasetGroupName': 'GCR-RS-News-Dataset-Group',
-                    'SolutionName': 'rankingSolution'
-                })
-            )
-        else:
-            res = step_funcs.start_execution(
-                stateMachineArn=stateMachineArn,
-                name="{}-{}".format(trainReq.change_type[0].lower(), uuid.uuid1()),
-                input=json.dumps({
-                    'change_type': trainReq.change_type,
-                    'Bucket': bucket,
-                    'S3Prefix': key_prefix
-                })
-            )
+        res = step_funcs.start_execution(
+            stateMachineArn=stateMachineArn,
+            name="{}-{}".format(trainReq.change_type[0].lower(), uuid.uuid1()),
+            input=json.dumps({
+                'change_type': trainReq.change_type,
+                'Bucket': bucket,
+                'S3Prefix': key_prefix
+            })
+        )
     except Exception as e:
         logging.error(repr(e))
         raise RSAWSServiceException(repr(e))
@@ -418,6 +380,21 @@ def init():
         account_id = boto3.client(
             'sts', aws_region).get_caller_identity()['Account']
 
+    global personalize
+    global personalize_runtime
+    global personalize_events
+    personalize = boto3.client('personalize', MANDATORY_ENV_VARS['AWS_REGION'])
+    personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+    personalize_events = boto3.client(service_name='personalize-events', region_name=MANDATORY_ENV_VARS['AWS_REGION'])
+    global dataset_group_arn
+    global event_tracker_arn
+    global event_tracker_id
+    global user_dataset_arn
+    dataset_group_arn = get_dataset_group_arn()
+    event_tracker_arn = get_event_tracker_arn()
+    event_tracker_id = get_event_tracking_id()
+    user_dataset_arn = get_user_dataset_arn()
+
 
 def get_step_funcs_name():
     namespace = MANDATORY_ENV_VARS['POD_NAMESPACE']
@@ -441,6 +418,52 @@ def get_step_funcs_name():
 
     logging.info("get_step_funcs_name return: namespace: {}, step funcs name: {}".format(namespace, step_funcs_name))
     return step_funcs_name
+
+
+def get_dataset_group_arn():
+    datasetGroups = personalize.list_dataset_groups()
+    for dataset_group in datasetGroups["datasetGroups"]:
+        if dataset_group["name"] == MANDATORY_ENV_VARS['PERSONALIZE_DATASET_GROUP']:
+            logging.info("Dataset Group Arn:{}".format(dataset_group["datasetGroupArn"]))
+            return dataset_group["datasetGroupArn"]
+
+
+def get_event_tracker_arn():
+    eventTrackers = personalize.list_event_trackers(
+        datasetGroupArn=dataset_group_arn
+    )
+    for event_tracker in eventTrackers["eventTrackers"]:
+        if event_tracker['name'] == MANDATORY_ENV_VARS['EVENT_TRACKER']:
+            logging.info("Event Tracker Arn:{}".format(event_tracker["eventTrackerArn"]))
+            return event_tracker["eventTrackerArn"]
+
+
+def get_event_tracking_id():
+    eventTracker = personalize.describe_event_tracker(
+        eventTrackerArn=event_tracker_arn
+    )
+    logging.info("Event Tracker ID:{}".format(eventTracker["eventTracker"]["trackingId"]))
+    return eventTracker["eventTracker"]["trackingId"]
+
+
+def get_user_dataset_arn():
+    datasets = personalize.list_datasets(
+        datasetGroupArn=dataset_group_arn
+    )
+    for dataset in datasets['datasets']:
+        if dataset['datasetType'] == 'USERS':
+            logging.info('User Dataset Arn:{}'.format(dataset['datasetArn']))
+            return dataset['datasetArn']
+
+
+def get_solution_arn(solutionName):
+    solutions = personalize.list_solutions(
+        datasetGroupArn=dataset_group_arn
+    )
+    for solution in solutions["solutions"]:
+        if solution['name'] == solutionName:
+            logging.info("Solution Arn:{}".format(solution["solutionArn"]))
+            return solution["solutionArn"]
 
 
 if __name__ == "__main__":

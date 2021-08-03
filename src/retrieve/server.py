@@ -4,19 +4,13 @@ import os
 from typing import List
 from urllib.request import Request
 
+import boto3
 import requests
 import uvicorn as uvicorn
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.exceptions import RequestValidationError
 from pydantic.main import BaseModel
 from starlette.responses import JSONResponse
-
-import service_pb2
-import service_pb2_grpc
-from google.protobuf import any_pb2
-import grpc
-import json
-
 import datetime
 
 app = FastAPI()
@@ -121,27 +115,20 @@ def ping():
 
 
 @app.get('/api/v1/retrieve/{user_id}', response_model=RecommendList, tags=["retrieve"])
-def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId=Header("0"), recommendType: str = 'recommend'):
+def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId=Header("0"),
+                    recommendType: str = 'recommend'):
     logging.info("retrieve_get_v2() enter")
-    item_list = []
-    if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
-        item_list = get_recommend_from_personalize(user_id, recommendType)
+    if recommendType == "recommend":
+        if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
+            item_list = get_recommend_from_personalize(user_id)
+        else:
+            item_list = get_recommend_from_default(user_id, recommendType)
+    #TODO
     else:
-        logging.info('send request to filter to get recommend data...')
-        host = MANDATORY_ENV_VARS['FILTER_HOST']
-        port = MANDATORY_ENV_VARS['FILTER_PORT']
+        item_list = get_recommend_from_default(user_id, recommendType)
 
-        svc_url = "http://{}:{}/filter/get_recommend_data?userId={}&recommendType={}" \
-            .format(host, port, user_id, recommendType)
-        logging.info("svc_url:{}".format(svc_url))
-
-        print("---------time before trigger filter:")
-        print(datetime.datetime.now())
-        item_list = get_data_request(svc_url, lambda json_data: json_data['data'])
-        print("---------time after trigger filter:")
-        print(datetime.datetime.now())
-
-    it_list = [RSItem(id=str(it['id']), description=str(it['description']), tags=str(it["tag"]).split(" ")) for it in item_list]
+    it_list = [RSItem(id=str(it['id']), description=str(it['description']), tags=str(it["tag"]).split(" ")) for it in
+               item_list]
     it_list_paged = it_list[curPage * pageSize: (curPage + 1) * pageSize]
     total_page = math.ceil(len(it_list) / pageSize)
 
@@ -157,11 +144,10 @@ def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId
     )
 
     logging.info("rs_list: {}".format(rs_list))
-    
-    
+
     print("---------time finish retrieve:")
     print(datetime.datetime.now())
-    
+
     return rs_list
 
 
@@ -202,30 +188,34 @@ def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId
 #     return rs_list
 
 
-def get_recommend_from_personalize(user_id, recommendType):
-    request = any_pb2.Any()
-    request.value = json.dumps({
-        'user_id': user_id,
-        'recommend_type': recommendType
-    }).encode('utf-8')
-    logging.info('Invoke personalize plugin to get recommend data...')
-    getRecommendDataRequest = service_pb2.GetRecommendDataRequest(apiVersion='v1', metadata='Retrieve',
-                                                                  type='RecommendResult')
-    getRecommendDataRequest.requestBody.Pack(request)
-    channel = grpc.insecure_channel('localhost:50051')
-    stub = service_pb2_grpc.RetrieveStub(channel)
-    response = stub.GetRecommendData(getRecommendDataRequest)
+def get_recommend_from_default(user_id, recommend_type):
+    logging.info('send request to filter to get recommend data...')
+    host = MANDATORY_ENV_VARS['FILTER_HOST']
+    port = MANDATORY_ENV_VARS['FILTER_PORT']
 
-    results = any_pb2.Any()
-    response.results.Unpack(results)
-    resultJson = json.loads(results.value, encoding='utf-8')
-    logging.info("get recommend from personalize plugin:{}".format(resultJson))
-    if response.code == 0:
-        logging.info("get data from personalize plugin successful.")
-        return resultJson['data']
-    else:
-        logging.info("get data from personalize plugin failed.")
-        return []
+    svc_url = "http://{}:{}/filter/get_recommend_data?userId={}&recommendType={}" \
+        .format(host, port, user_id, recommend_type)
+    logging.info("svc_url:{}".format(svc_url))
+
+    return get_data_request(svc_url, lambda json_data: json_data['data'])
+
+
+def get_recommend_from_personalize(user_id):
+    item_list = []
+    # trigger personalize api
+    get_recommendations_response = personalize_runtime.get_recommendations(
+        campaignArn=campaign_arn,
+        userId=str(user_id),
+    )
+    result_list = get_recommendations_response['itemList']
+    for item in result_list:
+        item_list.append({
+            "id": item['itemId'],
+            "description": 'personalize|{}'.format(str(item['score'])),
+            "tag": 'recommend'
+        })
+
+    return item_list
 
 
 def init():
@@ -235,6 +225,47 @@ def init():
             logging.error("Mandatory variable {%s} is not set, using default value {%s}.", var, MANDATORY_ENV_VARS[var])
         else:
             MANDATORY_ENV_VARS[var] = str(os.environ.get(var))
+
+    global personalize
+    global personalize_runtime
+    global personalize_events
+    personalize = boto3.client('personalize', MANDATORY_ENV_VARS['AWS_REGION'])
+    personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+    personalize_events = boto3.client(service_name='personalize-events', region_name=MANDATORY_ENV_VARS['AWS_REGION'])
+    global dataset_group_arn
+    global solution_arn
+    global campaign_arn
+    dataset_group_arn = get_dataset_group_arn()
+    solution_arn = get_solution_arn()
+    campaign_arn = get_campaign_arn()
+
+
+def get_dataset_group_arn():
+    datasetGroups = personalize.list_dataset_groups()
+    for dataset_group in datasetGroups["datasetGroups"]:
+        if dataset_group["name"] == MANDATORY_ENV_VARS['PERSONALIZE_DATASET_GROUP']:
+            logging.info("Dataset Group Arn:{}".format(dataset_group["datasetGroupArn"]))
+            return dataset_group["datasetGroupArn"]
+
+
+def get_solution_arn():
+    solutions = personalize.list_solutions(
+        datasetGroupArn=dataset_group_arn
+    )
+    for solution in solutions["solutions"]:
+        if solution['name'] == MANDATORY_ENV_VARS['PERSONALIZE_SOLUTION']:
+            logging.info("Solution Arn:{}".format(solution["solutionArn"]))
+            return solution["solutionArn"]
+
+
+def get_campaign_arn():
+    campaigns = personalize.list_campaigns(
+        solutionArn=solution_arn
+    )
+    for campaign in campaigns["campaigns"]:
+        if campaign["name"] == MANDATORY_ENV_VARS['PERSONALIZE_CAMPAIGN']:
+            logging.info("Campaign Arn:{}".format(campaign["campaignArn"]))
+            return campaign["campaignArn"]
 
 
 if __name__ == "__main__":

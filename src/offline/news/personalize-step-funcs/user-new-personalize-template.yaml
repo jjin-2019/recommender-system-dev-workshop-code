@@ -15,25 +15,17 @@ Parameters:
     Type: String
     Default: LambdaAndStepFuncsRole
 
-  SagemakerRoleName:
-    Type: String
-    Default: SMRole
-
-  S3UtilLabmda:
-    Type: String
-    Default: S3UtilLabmda
-
   PreCheckLabmda:
     Type: String
     Default: PreCheckLabmda
 
-  SNSMessageLambda:
-    Type: String
-    Default: SNSMessageLambda
-
   CreateDatasetImportJobLambda:
     Type: String
     Default: CreateDatasetImportJobLambda
+
+  CheckDatasetImportJobStatusLambda:
+    Type: String
+    Default: CheckDatasetImportJobStatusLambda
 
 Resources:
   UserNewStepFuncPersonalize:
@@ -74,14 +66,68 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "datasetGroupName.$": "$.DatasetGroupName",
-                  "datasetName.$": "$.DatasetName"
+                  "datasetName.$": "$.DatasetName",
+                  "fileName.$": "$.FileName"
                 }
               },
               "ResultSelector": {
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.CreateUserDatasetImportJob",
-              "Next": "Succeed"
+              "Next": "Wait 30 Seconds For Dataset Import Job"
+            },
+            "Wait 30 Seconds For Dataset Import Job": {
+              "Type": "Wait",
+              "Seconds": 30,
+              "Next": "Check User Dataset Import Job Status"
+            },
+            "Check User Dataset Import Job Status": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "rs-${Stage}-${CheckDatasetImportJobStatusLambda}",
+                "Payload": {
+                  "createDatasetImportJob.$": "$.CreateUserDatasetImportJob"
+                }
+              },
+              "ResultSelector": {
+                "Payload.$": "$.Payload"
+              },
+              "ResultPath": "$.CheckUserDatsetImportJobStatus",
+              "Next": "User Dataset Import Job Status Choice"
+            },
+            "User Dataset Import Job Status Choice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Or": [
+                    {
+                      "Variable": "$.CheckUserDatsetImportJobStatus.body.dataset_import_job_status",
+                      "StringEquals": "CREATE PENDING"
+                    },
+                    {
+                      "Variable": "$.CheckUserDatsetImportJobStatus.body.dataset_import_job_status",
+                      "StringEquals": "CREATE IN_PROGRESS"
+                    }
+                  ],
+                  "Next": "Wait 30 Seconds For Dataset Import Job"
+                },
+                {
+                  "Variable": "$.CheckUserDatsetImportJobStatus.body.dataset_import_job_status",
+                  "StringEquals": "ACTIVE",
+                  "Next": "Succeed"
+                },
+                {
+                  "Variable": "$.CheckUserDatsetImportJobStatus.body.dataset_import_job_status",
+                  "StringEquals": "CREATE FAILED",
+                  "Next": "Fail"
+                }
+              ],
+              "Default": "Fail"
+            },
+            "Fail": {
+              "Type": "Fail",
+              "Error": "Dataset Import Job Failed"
             },
             "Succeed": {
               "Type": "Succeed"

@@ -15,21 +15,9 @@ Parameters:
     Type: String
     Default: LambdaAndStepFuncsRole
 
-  SagemakerRoleName:
-    Type: String
-    Default: SMRole
-
-  S3UtilLabmda:
-    Type: String
-    Default: S3UtilLabmda
-
   PreCheckLabmda:
     Type: String
     Default: PreCheckLabmda
-
-  SNSMessageLambda:
-    Type: String
-    Default: SNSMessageLambda
 
   CreateDatasetImportJobLambda:
     Type: String
@@ -42,6 +30,18 @@ Parameters:
   UpdateCampaignLambda:
     Type: String
     Default: UpdateCampaignLambda
+
+  CheckDatasetImportJobStatusLambda:
+    Type: String
+    Default: CheckDatasetImportJobStatusLambda
+
+  CheckSolutionVersionStatusLambda:
+    Type: String
+    Default: CheckSolutionVersionStatusLambda
+
+  CheckCampaignStatusLambda:
+    Type: String
+    Default: CheckCampaignStatusLambda
 
 Resources:
   TrainModelStepFuncPersonalize:
@@ -82,14 +82,64 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "datasetGroupName.$": "$.DatasetGroupName",
-                  "datasetName.$": "$.DatasetName"
+                  "datasetName.$": "$.DatasetName",
+                  "fileName.$": "$.FileName"
                 }
               },
               "ResultSelector": {
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.CreateInteractionDatasetImportJob",
-              "Next": "Update Solution Version"
+              "Next": "Wait 30 Seconds For Dataset Import Job"
+            },
+            "Wait 30 Seconds For Dataset Import Job": {
+              "Type": "Wait",
+              "Seconds": 30,
+              "Next": "Check Interaction Dataset Import Job Status"
+            },
+            "Check Interaction User Dataset Import Job Status": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "rs-${Stage}-${CheckDatasetImportJobStatusLambda}",
+                "Payload": {
+                  "createDatasetImportJob.$": "$.CreateInteractionDatasetImportJob"
+                }
+              },
+              "ResultSelector": {
+                "Payload.$": "$.Payload"
+              },
+              "ResultPath": "$.CheckInteractionDatsetImportJobStatus",
+              "Next": "Interaction Dataset Import Job Status Choice"
+            },
+            "Interaction Dataset Import Job Status Choice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Or": [
+                    {
+                      "Variable": "$.CheckInteractionDatsetImportJobStatus.body.dataset_import_job_status",
+                      "StringEquals": "CREATE PENDING"
+                    },
+                    {
+                      "Variable": "$.CheckInteractionDatsetImportJobStatus.body.dataset_import_job_status",
+                      "StringEquals": "CREATE IN_PROGRESS"
+                    }
+                  ],
+                  "Next": "Wait 30 Seconds For Dataset Import Job"
+                },
+                {
+                  "Variable": "$.CheckInteractionDatsetImportJobStatus.body.dataset_import_job_status",
+                  "StringEquals": "ACTIVE",
+                  "Next": "Update Solution Version"
+                },
+                {
+                  "Variable": "$.CheckInteractionDatsetImportJobStatus.body.dataset_import_job_status",
+                  "StringEquals": "CREATE FAILED",
+                  "Next": "Fail"
+                }
+              ],
+              "Default": "Fail"
             },
             "Update Solution Version": {
               "Type": "Task",
@@ -106,7 +156,56 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.UpdateSolutionVersion",
-              "Next": "Update Campaign"
+              "Next": "Wait 1 min for updating solution version"
+            },
+            "Wait 1 min for updating solution version": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "Check Solution Version Status"
+            },
+            "Check Solution Version Status": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "rs-${Stage}-${CheckSolutionVersionStatusLambda}",
+                "Payload": {
+                  "updateSolutionVersion.$": "$.UpdateSolutionVersion"
+                }
+              },
+              "ResultSelector": {
+                "Payload.$": "$.Payload"
+              },
+              "ResultPath": "$.CheckSolutionVersionStatus",
+              "Next": "Solution Version Status Choice"
+            },
+            "Solution Version Status Choice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Or": [
+                    {
+                      "Variable": "$.CheckSolutionVersionStatus.body.solution_version_status",
+                      "StringEquals": "CREATE PENDING"
+                    },
+                    {
+                      "Variable": "$.CheckSolutionVersionStatus.body.solution_version_status",
+                      "StringEquals": "CREATE IN_PROGRESS"
+                    }
+                  ],
+                  "Next": "Wait 1 min for updating solution version"
+                },
+                {
+                  "Variable": "$.CheckSolutionVersionStatus.body.solution_version_status",
+                  "StringEquals": "ACTIVE",
+                  "Next": "Update Campaign"
+                },
+                {
+                  "Variable": "$.CheckSolutionVersionStatus.body.solution_version_status",
+                  "StringEquals": "CREATE FAILED",
+                  "Next": "Fail"
+                }
+              ],
+              "Default": "Fail"
             },
             "Update Campaign": {
               "Type": "Task",
@@ -124,7 +223,60 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.UpdateCampaign",
-              "Next": "Succeed"
+              "Next": "Wait 1 min for updating campaign"
+            },
+            "Wait 1 min for updating campaign": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "Check Campaign Status"
+            },
+            "Check Campaign Status": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "rs-${Stage}-${CheckCampaignStatusLambda}",
+                "Payload": {
+                  "updateCampaign.$": "$.UpdateCampaign"
+                }
+              },
+              "ResultSelector": {
+                "Payload.$": "$.Payload"
+              },
+              "ResultPath": "$.CheckCampaignStatus",
+              "Next": "Campaign Status Choice"
+            },
+            "Campaign Status Choice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Or": [
+                    {
+                      "Variable": "$.CheckCampaignStatus.body.campaign_status",
+                      "StringEquals": "CREATE PENDING"
+                    },
+                    {
+                      "Variable": "$.CheckCampaignStatus.body.campaign_status",
+                      "StringEquals": "CREATE IN_PROGRESS"
+                    }
+                  ],
+                  "Next": "Wait 1 min for updating campaign"
+                },
+                {
+                  "Variable": "$.CheckCampaignStatus.body.campaign_status",
+                  "StringEquals": "ACTIVE",
+                  "Next": "Succeed"
+                },
+                {
+                  "Variable": "$.CheckCampaignStatus.body.campaign_status",
+                  "StringEquals": "CREATE FAILED",
+                  "Next": "Fail"
+                }
+              ],
+              "Default": "Fail"
+            },
+            "Fail": {
+              "Type": "Fail",
+              "Error": "Train Model Failed"
             },
             "Succeed": {
               "Type": "Succeed"
