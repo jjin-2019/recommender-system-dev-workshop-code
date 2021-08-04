@@ -145,7 +145,7 @@ Resources:
                   "S3Prefix.$": "$.S3Prefix",
                   "DatasetGroupName.$": "$.DatasetGroupName",
                   "DatasetName.$": "$.UserDatasetName",
-                  "FileName": "$.UserFileName"
+                  "FileName.$": "$.UserFileName"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-UserNewStepFunc-Personalize",
                 "Name.$": "States.Format('ou{}', $$.Execution.Name)"
@@ -162,7 +162,7 @@ Resources:
                   "S3Prefix.$": "$.S3Prefix",
                   "DatasetGroupName.$": "$.DatasetGroupName",
                   "DatasetName.$": "$.ItemDatasetName",
-                  "FileName": "$.ItemFileName"
+                  "FileName.$": "$.ItemFileName"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-ItemNewStepFunc-Personalize",
                 "Name.$": "States.Format('oc{}', $$.Execution.Name)"
@@ -181,7 +181,7 @@ Resources:
                   "DatasetName.$": "$.InteractionDatasetName",
                   "SolutionName.$": "$.SolutionName",
                   "TrainingMode.$": "$.TrainingMode",
-                  "FileName": "$.InteractionFileName"
+                  "FileName.$": "$.InteractionFileName"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-TrainModelStepFunc-Personalize",
                 "Name.$": "States.Format('ot{}', $$.Execution.Name)"
