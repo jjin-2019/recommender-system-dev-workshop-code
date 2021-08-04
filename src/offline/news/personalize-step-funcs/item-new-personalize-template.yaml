@@ -102,23 +102,23 @@ Resources:
                 {
                   "Or": [
                     {
-                      "Variable": "$.CheckItemDatsetImportJobStatus.body.dataset_import_job_status",
+                      "Variable": "$.CheckItemDatsetImportJobStatus.Payload.dataset_import_job_status",
                       "StringEquals": "CREATE PENDING"
                     },
                     {
-                      "Variable": "$.CheckItemDatsetImportJobStatus.body.dataset_import_job_status",
+                      "Variable": "$.CheckItemDatsetImportJobStatus.Payload.dataset_import_job_status",
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
                   "Next": "Wait 30 Seconds For Dataset Import Job"
                 },
                 {
-                  "Variable": "$.CheckItemDatsetImportJobStatus.body.dataset_import_job_status",
+                  "Variable": "$.CheckItemDatsetImportJobStatus.Payload.dataset_import_job_status",
                   "StringEquals": "ACTIVE",
                   "Next": "Succeed"
                 },
                 {
-                  "Variable": "$.CheckItemDatsetImportJobStatus.body.dataset_import_job_status",
+                  "Variable": "$.CheckItemDatsetImportJobStatus.Payload.dataset_import_job_status",
                   "StringEquals": "CREATE FAILED",
                   "Next": "Fail"
                 }
