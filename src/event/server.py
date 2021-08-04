@@ -40,7 +40,9 @@ MANDATORY_ENV_VARS = {
     'POD_NAMESPACE': 'default',
     'TEST': 'False',
     'USE_PERSONALIZE_PLUGIN': 'False',
-    'PERSONALIZE_RECIPE': 'user-personalization'
+    'PERSONALIZE_RECIPE': 'user-personalization',
+    'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Dataset-Group',
+    'EVENT_TRACKER': 'NewsEventTracker'
 }
 
 
@@ -389,11 +391,9 @@ def init():
     global dataset_group_arn
     global event_tracker_arn
     global event_tracker_id
-    global user_dataset_arn
     dataset_group_arn = get_dataset_group_arn()
     event_tracker_arn = get_event_tracker_arn()
     event_tracker_id = get_event_tracking_id()
-    user_dataset_arn = get_user_dataset_arn()
 
 
 def get_step_funcs_name():
@@ -454,16 +454,6 @@ def get_user_dataset_arn():
         if dataset['datasetType'] == 'USERS':
             logging.info('User Dataset Arn:{}'.format(dataset['datasetArn']))
             return dataset['datasetArn']
-
-
-def get_solution_arn(solutionName):
-    solutions = personalize.list_solutions(
-        datasetGroupArn=dataset_group_arn
-    )
-    for solution in solutions["solutions"]:
-        if solution['name'] == solutionName:
-            logging.info("Solution Arn:{}".format(solution["solutionArn"]))
-            return solution["solutionArn"]
 
 
 if __name__ == "__main__":

@@ -23,7 +23,10 @@ MANDATORY_ENV_VARS = {
     'FILTER_HOST': 'filter',
     'FILTER_PORT': '5200',
     'TEST': 'False',
-    'USE_PERSONALIZE_PLUGIN': 'False'
+    'USE_PERSONALIZE_PLUGIN': 'False',
+    'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Dataset-Group',
+    'PERSONALIZE_SOLUTION': 'userPersonalizeSolution',
+    'PERSONALIZE_CAMPAIGN': 'gcr-rs-dev-workshop-news-UserPersonalize-campaign'
 }
 
 
