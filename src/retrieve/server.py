@@ -26,7 +26,7 @@ MANDATORY_ENV_VARS = {
     'AWS_REGION': 'ap-northeast-1',
     'USE_PERSONALIZE_PLUGIN': 'False',
     'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Dataset-Group',
-    'PERSONALIZE_SOLUTION': 'userPersonalizeSolution',
+    'PERSONALIZE_SOLUTION': 'userPersonalizeSolutionNew',
     'PERSONALIZE_CAMPAIGN': 'gcr-rs-dev-workshop-news-UserPersonalize-campaign'
 }
 
