@@ -127,8 +127,8 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName",
-                  "SolutionName.$": "$.SolutionName"
+                  "DatasetGroupName.$": "GCR-RS-News-Dataset-Group",
+                  "SolutionName.$": "userPersonalizeSolutionNew"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-BatchUpdateStepFunc",
                 "Name.$": "States.Format('oa{}', $$.Execution.Name)"
@@ -143,8 +143,9 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName",
-                  "DatasetName.$": "$.UserDatasetName"
+                  "DatasetGroupName.$": "GCR-RS-News-Dataset-Group",
+                  "DatasetName.$": "NewsUserDataset",
+                  "FileName.$": "personalize_user.csv"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-UserNewStepFunc-Personalize",
                 "Name.$": "States.Format('ou{}', $$.Execution.Name)"
@@ -159,8 +160,9 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName",
-                  "DatasetName.$": "$.ItemDatasetName"
+                  "DatasetGroupName.$": "GCR-RS-News-Dataset-Group",
+                  "DatasetName.$": "NewsItemDataset",
+                  "FileName.$": "personalize_item.csv"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-ItemNewStepFunc-Personalize",
                 "Name.$": "States.Format('oc{}', $$.Execution.Name)"
@@ -175,10 +177,11 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName",
-                  "DatasetName.$": "$.InteractionDatasetName",
-                  "SolutionName.$": "$.SolutionName",
-                  "TrainingMode.$": "$.TrainingMode"
+                  "DatasetGroupName.$": "GCR-RS-News-Dataset-Group",
+                  "DatasetName.$": "NewsInteractionDataset",
+                  "SolutionName.$": "userPersonalizeSolutionNew",
+                  "TrainingMode.$": "UPDATE",
+                  "FileName.$": "personalize_interaction.csv"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-TrainModelStepFunc-Personalize",
                 "Name.$": "States.Format('ot{}', $$.Execution.Name)"
