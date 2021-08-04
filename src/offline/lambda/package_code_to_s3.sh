@@ -54,7 +54,7 @@ rm -rf deploy >/dev/null 2>&1
 mkdir deploy/
 cd deploy/
 
-pip install --target ./package requests >/dev/null
+pip install --target ./package requests==2.23.0 >/dev/null
 
 if [[ $? -ne 0 ]]; then
     echo "error!!!"
