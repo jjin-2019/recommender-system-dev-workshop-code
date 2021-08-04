@@ -22,8 +22,8 @@ resources:
 # all with following *kustomization*
 images:
 - name: rs/demo
-  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/demo
-  newTag: ce9018e816322bebd2d27d02394e82fe930a3fae
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/demo
+  newTag: c0886ff968bf3bab6aba75438114ac033c2f3843
 - name: rs/event
   newName: public.ecr.aws/t8u1z3c8/rs/event
   newTag: latest
@@ -46,17 +46,17 @@ images:
   newName: public.ecr.aws/t8u1z3c8/rs/portrait-plugin
   newTag: latest
 - name: rs/rank
-  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/rank
-  newTag: 6926702d3b00b59abde19cd72de823756717b510
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/rank
+  newTag: e2bdda44998e5adc797a2a7fd8d84a3478decbbf
 - name: rs/rank-plugin
-  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/rank-plugin
-  newTag: news-6926702d3b00b59abde19cd72de823756717b510
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/rank-plugin
+  newTag: news-e2bdda44998e5adc797a2a7fd8d84a3478decbbf
 - name: rs/recall
-  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/recall
-  newTag: 6926702d3b00b59abde19cd72de823756717b510
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall
+  newTag: 0b4cab32aa14eaeac47c3cc859dcb10f90fca4a0
 - name: rs/recall-plugin
-  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/recall-plugin
-  newTag: news-6926702d3b00b59abde19cd72de823756717b510
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall-plugin
+  newTag: news-0b4cab32aa14eaeac47c3cc859dcb10f90fca4a0
 - name: rs/retrieve
   newName: public.ecr.aws/t8u1z3c8/rs/retrieve
   newTag: latest
