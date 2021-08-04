@@ -55,11 +55,11 @@ images:
   newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/rank-plugin
   newTag: news-6926702d3b00b59abde19cd72de823756717b510
 - name: rs/recall
-  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/recall
-  newTag: 96f8797be55e6968da5767abdd8747edb6121305
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall
+  newTag: 0b4cab32aa14eaeac47c3cc859dcb10f90fca4a0
 - name: rs/recall-plugin
-  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/recall-plugin
-  newTag: news-96f8797be55e6968da5767abdd8747edb6121305
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall-plugin
+  newTag: news-0b4cab32aa14eaeac47c3cc859dcb10f90fca4a0
 - name: rs/retrieve
   newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/retrieve
   newTag: 6faff95b2d0f96cb210fe1d83747b6cf4162dae7
