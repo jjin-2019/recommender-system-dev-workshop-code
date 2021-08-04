@@ -23,6 +23,7 @@ MANDATORY_ENV_VARS = {
     'FILTER_HOST': 'filter',
     'FILTER_PORT': '5200',
     'TEST': 'False',
+    'AWS_REGION': 'ap-northeast-1',
     'USE_PERSONALIZE_PLUGIN': 'False',
     'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Dataset-Group',
     'PERSONALIZE_SOLUTION': 'userPersonalizeSolution',

@@ -32,7 +32,7 @@ MANDATORY_ENV_VARS = {
     'NEWS_ID_FEATURE': 'news_id_news_feature_dict.pickle',
     'MODEL_EXTRACT_DIR': '/opt/ml/model/',
     'DEMO_SERVICE_ENDPOINT': 'http://demo:5900',
-    'RANK_MODEL': 'personalize',
+    'RANK_MODEL': 'dkn',
     'AWS_REGION': 'ap-northeast-1',
     'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Ranking-Dataset-Group',
     'PERSONALIZE_SOLUTION': 'rankingSolution',
