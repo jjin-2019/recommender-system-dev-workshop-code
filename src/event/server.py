@@ -18,9 +18,6 @@ app = FastAPI()
 api_router = APIRouter()
 
 s3client = boto3.client('s3')
-personalize = boto3.client('personalize')
-personalize_runtime = boto3.client('personalize-runtime')
-personalize_events = boto3.client('personalize-events')
 
 
 step_funcs = None

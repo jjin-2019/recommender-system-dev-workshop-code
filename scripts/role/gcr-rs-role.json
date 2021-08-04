@@ -40,11 +40,19 @@
         {
             "Effect": "Allow",
             "Action": [
-                "iam:GetRole",
-                "iam:ListRoles"
+                "iam:GetRole"
             ],
             "Resource": [
                 "arn:aws:iam::<account_id>:role/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:ListRoles"
+            ],
+            "Resource": [
+                "*"
             ]
         },
         {
@@ -126,7 +134,7 @@
                 "ec2:*"
             ],
             "Resource": "*"
-        }, 
+        },
         {
             "Effect": "Allow",
             "Action": [
@@ -137,7 +145,7 @@
                 "elasticache:DeleteCacheSubnetGroup"
             ],
             "Resource": "*"
-        }, 
+        },
         {
             "Effect": "Allow",
             "Action": "cloudwatch:*",
@@ -203,11 +211,10 @@
                 "ecr:Describe*",
                 "ecr:List*",
                 "ecr:Put*",
-                "ecr:Create*"
+                "ecr:Create*",
+                "ecr:Get*"
             ],
             "Resource": "*"
         }
-    ]  
+    ]
 }
-
-
