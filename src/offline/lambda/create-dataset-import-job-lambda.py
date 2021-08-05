@@ -39,9 +39,23 @@ def do_handler(event, context):
     s3_key_prefix = event['prefix']
     ps_config = event['ps_config']
     ps_config_json = json.loads(ps_config)
-    dataset_group_name = ps_config_json['datasetGroupName']
-    dataset_name = ps_config_json['datasetName']
-    file_name = ps_config_json['fileName']
+    dataset_group_name = ps_config_json['DatasetGroupName']
+    dataset_type = event['datasetType']
+
+    if dataset_type == "USER":
+        dataset_name = ps_config_json['UserDatasetName']
+        file_name = ps_config_json['UserFileName']
+    elif dataset_type == "ITEM":
+        dataset_name = ps_config_json['ItemDatasetName']
+        file_name = ps_config_json['ItemFileName']
+    elif dataset_type == "INTERACTION":
+        dataset_name = ps_config_json['InteractionDatasetName']
+        file_name = ps_config_json['InteractionFileName']
+    else:
+        return {
+            "statusCode": 400,
+            "error": "Invalid Dataset Type!"
+        }
 
     dataset_group_arn = get_dataset_group_arn(dataset_group_name)
     print("dataset_group_arn:{}".format(dataset_group_arn))

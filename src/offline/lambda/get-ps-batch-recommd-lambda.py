@@ -26,35 +26,25 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    update_campaign = event['UpdateCampaign']
-    campaign_arn = update_campaign['body']['campaign_arn']
-    describe_campaign_response = personalize.describe_campaign(
-        campaignArn=campaign_arn
+    ps_config = event['ps_config']
+    ps_config_json = json.loads(ps_config)
+    solution_name = ps_config_json['solutionName']
+
+
+
+    personalize.create_batch_inference_job(
+        solutionVersionArn="Solution version ARN",
+        jobName="Batch job name",
+        roleArn="IAM service role ARN",
+        batchInferenceJobConfig={
+            # optional USER_PERSONALIZATION recipe hyperparameters
+            "itemExplorationConfig": {
+                "explorationWeight": "0.3",
+                "explorationItemAgeCutOff": "30"
+            }
+        },
+        jobInput=
+        {"s3DataSource": {"path": "S3 input path"}},
+        jobOutput=
+        {"s3DataDestination": {"path": "S3 output path"}}
     )
-    status = describe_campaign_response["campaign"]["status"]
-    print("Campaign Status: {}".format(status))
-
-    return success_response(json.dumps({
-        "campaign_status": status,
-        "campaign_arn": campaign_arn
-    }))
-
-
-def success_response(message):
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }
-
-
-def error_response(message):
-    return {
-        "statusCode": 400,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }

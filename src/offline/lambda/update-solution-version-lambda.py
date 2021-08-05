@@ -28,9 +28,9 @@ def lambda_handler(event, context):
 def do_handler(event, context):
     ps_config = event['ps_config']
     ps_config_json = json.loads(ps_config)
-    dataset_group_name = ps_config_json['datasetGroupName']
-    solution_name = ps_config_json['solutionName']
-    training_mode = ps_config_json['trainingMode']
+    dataset_group_name = ps_config_json['DatasetGroupName']
+    solution_name = ps_config_json['SolutionName']
+    training_mode = ps_config_json['TrainingMode']
 
     dataset_group_arn = get_dataset_group_arn(dataset_group_name)
     print("dataset_group_arn:{}".format(dataset_group_arn))

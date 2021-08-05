@@ -28,9 +28,9 @@ def lambda_handler(event, context):
 def do_handler(event, context):
     ps_config = event['ps_config']
     ps_config_json = json.loads(ps_config)
-    dataset_group_name = ps_config_json['datasetGroupName']
-    solution_name = ps_config_json['solutionName']
-    campaign_name = ps_config_json['campaignName']
+    dataset_group_name = ps_config_json['DatasetGroupName']
+    solution_name = ps_config_json['SolutionName']
+    campaign_name = ps_config_json['CampaignName']
     body = json.loads(event['updateSolutionVersion']['Payload']['body'])
     solution_version_arn = body['solution_version_arn']
 
