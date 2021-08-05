@@ -26,15 +26,18 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    dataset_import_job_arn = event['createDatasetImportJob']['Payload']['dataset_import_job_arn']
-    describe_dataset_import_job_response = personalize.describe_dataset_import_job(
-        datasetImportJobArn=dataset_import_job_arn
+    batch_inference_job_arn = event['UpdateCampaign']['Payload']['batch_inference_job_arn']
+    describe_batch_inference_job_response = personalize.describe_batch_inference_job(
+        batchInferenceJobArn=batch_inference_job_arn
     )
-    status = describe_dataset_import_job_response["datasetImportJob"]['status']
-    print("Dataset Import Job Status: {}".format(status))
+    status = describe_batch_inference_job_response["batchInferenceJob"]["status"]
+    print("Batch Inference Job Status: {}".format(status))
 
     return {
         "statusCode": 200,
-        "dataset_import_job_status": status,
-        "dataset_import_job_arn": dataset_import_job_arn
+        "batch_inference_job_arn": batch_inference_job_arn,
+        "batch_inference_job_status": status
     }
+
+
+

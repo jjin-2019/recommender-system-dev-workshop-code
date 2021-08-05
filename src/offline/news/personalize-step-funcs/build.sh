@@ -41,6 +41,7 @@ PARAMETER_OVERRIDES="Bucket=$BUCKET S3Prefix=$S3Prefix Stage=$Stage"
 echo PARAMETER_OVERRIDES:$PARAMETER_OVERRIDES
 
 all_stepfuncs=(
+batch-update-personalize
 item-new-personalize
 user-new-personalize
 train-model-personalize

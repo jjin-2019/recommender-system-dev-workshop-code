@@ -58,7 +58,7 @@ def do_handler(event, context):
             "error": "Invalid Solution Name!"
         }
 
-    personalize.create_batch_inference_job(
+    response = personalize.create_batch_inference_job(
         solutionVersionArn=solution_version_arn,
         jobName="get-batch-recommend-job-{}".format(int(time.time())),
         roleArn=role_arn,
@@ -73,4 +73,11 @@ def do_handler(event, context):
             }
         }
     )
+
+    batch_inference_job_arn = response['batchInferenceJobArn']
+
+    return {
+        "statusCode": 200,
+        "batch_inference_job_arn": batch_inference_job_arn
+    }
 

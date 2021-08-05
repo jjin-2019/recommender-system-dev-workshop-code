@@ -183,6 +183,21 @@ Resources:
               ],
               "Default": "Fail"
             },
+            "Sync Solution Version to S3": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "rs-${Stage}-${SyncSolutionVersion}",
+                "Payload": {
+                  "updateSolutionVersion.$": "$.UpdateSolutionVersion"
+                }
+              },
+              "ResultSelector": {
+                "Payload.$": "$.Payload"
+              },
+              "ResultPath": "$.SyncSolutionVersion",
+              "Next": "Succeed"
+            },
             "Fail": {
               "Type": "Fail",
               "Error": "Train Model Failed"

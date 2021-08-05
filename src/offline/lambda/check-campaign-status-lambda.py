@@ -26,8 +26,7 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    body = json.loads(event['UpdateCampaign']['Payload']['body'])
-    campaign_arn = body['campaign_arn']
+    campaign_arn = event['updateCampaign']['Payload']['campaign_arn']
     describe_campaign_response = personalize.describe_campaign(
         campaignArn=campaign_arn
     )

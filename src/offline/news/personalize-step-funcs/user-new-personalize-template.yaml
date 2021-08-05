@@ -47,7 +47,7 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "file_list": [
-                    "system/personalize-data/personalize_user.csv"
+                    "system/personalize-data/data/personalize_user.csv"
                   ]
                 }
               },

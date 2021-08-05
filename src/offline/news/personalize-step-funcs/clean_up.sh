@@ -34,6 +34,7 @@ AWS_ACCOUNT_ID=$($AWS_CMD sts get-caller-identity  --o text | awk '{print $1}')
 echo "AWS_ACCOUNT_ID: ${AWS_ACCOUNT_ID}"
 
 all_stepfuncs=(
+batch-update-personalize
 item-new-personalize
 user-new-personalize
 train-model-personalize

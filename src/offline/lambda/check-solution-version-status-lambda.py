@@ -26,8 +26,7 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    body = json.loads(event['updateSolutionVersion']['Payload']['body'])
-    solution_version_arn = body['solution_version_arn']
+    solution_version_arn = event['updateSolutionVersion']['Payload']['solution_version_arn']
     describe_solution_version_response = personalize.describe_solution_version(
         solutionVersionArn=solution_version_arn
     )

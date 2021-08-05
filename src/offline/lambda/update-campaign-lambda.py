@@ -31,8 +31,7 @@ def do_handler(event, context):
     dataset_group_name = ps_config_json['DatasetGroupName']
     solution_name = ps_config_json['SolutionName']
     campaign_name = ps_config_json['CampaignName']
-    body = json.loads(event['updateSolutionVersion']['Payload']['body'])
-    solution_version_arn = body['solution_version_arn']
+    solution_version_arn = event['updateSolutionVersion']['Payload']['solution_version_arn']
 
     dataset_group_arn = get_dataset_group_arn(dataset_group_name)
     print("dataset_group_arn:{}".format(dataset_group_arn))
