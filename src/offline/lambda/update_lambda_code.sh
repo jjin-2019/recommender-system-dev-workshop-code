@@ -40,6 +40,9 @@ lambda_funcs_name=(
  rs-${Stage}-CheckSolutionVersionStatusLambda
  rs-${Stage}-UpdateCampaignLambda
  rs-${Stage}-CheckCampaignStatusLambda
+ rs-${Stage}-CreateBatchInferenceJobLambda
+ rs-${Stage}-CheckBatchInferenceJobStatusLambda
+ rs-${Stage}-SyncSolutionVersionLambda
 )
 
 lambda_funcs_code=(
@@ -52,6 +55,9 @@ lambda_funcs_code=(
  check-solution-version-status-lambda.zip
  update-campaign-lambda.zip
  check-campaign-status-lambda.zip
+ create-batch-inference-job-lambda.zip
+ check-batch-inference-job-status-lambda.zip
+ sync-solution-version-lambda.zip
 )
 
 i=0

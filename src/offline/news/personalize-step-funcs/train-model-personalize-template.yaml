@@ -43,6 +43,10 @@ Parameters:
     Type: String
     Default: CheckCampaignStatusLambda
 
+  SyncSolutionVersionLambda:
+    Type: String
+    Default: SyncSolutionVersionLambda
+
 Resources:
   TrainModelStepFuncPersonalize:
     Type: AWS::StepFunctions::StateMachine
@@ -187,7 +191,7 @@ Resources:
               "Type": "Task",
               "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
-                "FunctionName": "rs-${Stage}-${SyncSolutionVersion}",
+                "FunctionName": "rs-${Stage}-${SyncSolutionVersionLambda}",
                 "Payload": {
                   "updateSolutionVersion.$": "$.UpdateSolutionVersion"
                 }

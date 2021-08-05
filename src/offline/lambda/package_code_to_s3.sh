@@ -47,6 +47,9 @@ lambda_funcs=(
   check-solution-version-status-lambda
   update-campaign-lambda
   check-campaign-status-lambda
+  create-batch-inference-job-lambda
+  check-batch-inference-job-status-lambda
+  sync-solution-version-lambda
 )
 
 rm -rf deploy >/dev/null 2>&1

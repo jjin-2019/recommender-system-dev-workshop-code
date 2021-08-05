@@ -163,3 +163,36 @@ Resources:
         Bucket: !Ref Bucket
         Key: !Sub "${S3Prefix}/code/lambda/check-campaign-status-lambda.zip"
       Timeout: 900
+
+  CreateBatchInferenceJobLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub rs-${Stage}-CreateBatchInferenceJobLambda
+      Handler: create-batch-inference-job-lambda.lambda_handler
+      Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
+      CodeUri:
+        Bucket: !Ref Bucket
+        Key: !Sub "${S3Prefix}/code/lambda/create-batch-inference-job-lambda.zip"
+      Timeout: 900
+
+  CheckBatchInferenceJobStatusLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub rs-${Stage}-CheckBatchInferenceJobStatusLambda
+      Handler: check-batch-inference-job-status-lambda.lambda_handler
+      Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
+      CodeUri:
+        Bucket: !Ref Bucket
+        Key: !Sub "${S3Prefix}/code/lambda/check-batch-inference-job-status-lambda.zip"
+      Timeout: 900
+
+  SyncSolutionVersionLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub rs-${Stage}-SyncSolutionVersionLambda
+      Handler: sync-solution-version-lambda.lambda_handler
+      Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
+      CodeUri:
+        Bucket: !Ref Bucket
+        Key: !Sub "${S3Prefix}/code/lambda/sync-solution-version-lambda.zip"
+      Timeout: 900
