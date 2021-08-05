@@ -37,9 +37,12 @@ def do_handler(event, context):
 
     config['SolutionVersionArn'] = solution_version_arn
 
-    with open(file_name, 'w', encoding='utf8') as out:
-        json.dump(config, out, indent=2)
-    s3.Object(bucket, file_key).put(Body=file_name)
+    g = open('/tmp/config.json', 'w', encoding='utf8')
+    g.write(json.dumps(config, indent=2))
+    g.close()
+
+    with open('/tmp/config.json', 'rb') as f:
+        s3.Object(bucket, file_key).put(Body=f)
 
     return {
         "statusCode": 200
