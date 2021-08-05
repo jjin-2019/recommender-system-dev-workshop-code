@@ -37,7 +37,6 @@ MANDATORY_ENV_VARS = {
     'TEST': 'False',
     'USE_PERSONALIZE_PLUGIN': 'False',
     'PERSONALIZE_RECIPE': 'user-personalization',
-    'LOCAL_DATA_FOLDER': '/tmp/rs-data/'
 }
 
 
@@ -365,8 +364,7 @@ def start_step_funcs(trainReq):
 def load_ps_config():
     s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
     s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
-    file_name = 'system/personalize-data/ps-config/config.json'
-    file_key = os.path.join(s3_prefix, file_name)
+    file_key = '{}/system/personalize-data/ps-config/config.json'.format(s3_prefix)
     s3 = boto3.resource('s3')
     object_str = s3.Object(s3_bucket, file_key).get()[
         'Body'].read().decode('utf-8')
@@ -406,6 +404,13 @@ def init():
 
 
 def get_step_funcs_name():
+    # Change for Personalize
+    # stage = MANDATORY_ENV_VARS['Stage']
+    # scenarios = MANDATORY_ENV_VARS['Scenarios']
+    # inference = MANDATORY_ENV_VARS['Inference']
+    # step_funcs_name = "rs-{}-{}-OverallStepFunc-{}".format(stage, scenarios, inference)
+    # return step_funcs_name
+
     namespace = MANDATORY_ENV_VARS['POD_NAMESPACE']
     known_mappings = {
         'rs-news-dev-ns': 'rs-dev-News-OverallStepFunc',

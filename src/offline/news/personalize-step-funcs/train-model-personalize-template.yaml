@@ -99,23 +99,23 @@ Resources:
                 {
                   "Or": [
                     {
-                      "Variable": "$.CheckSolutionVersionStatus.body.solution_version_status",
+                      "Variable": "$.CheckSolutionVersionStatus.Payload.solution_version_status",
                       "StringEquals": "CREATE PENDING"
                     },
                     {
-                      "Variable": "$.CheckSolutionVersionStatus.body.solution_version_status",
+                      "Variable": "$.CheckSolutionVersionStatus.Payload.solution_version_status",
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
                   "Next": "Wait 1 min for updating solution version"
                 },
                 {
-                  "Variable": "$.CheckSolutionVersionStatus.body.solution_version_status",
+                  "Variable": "$.CheckSolutionVersionStatus.Payload.solution_version_status",
                   "StringEquals": "ACTIVE",
                   "Next": "Update Campaign"
                 },
                 {
-                  "Variable": "$.CheckSolutionVersionStatus.body.solution_version_status",
+                  "Variable": "$.CheckSolutionVersionStatus.Payload.solution_version_status",
                   "StringEquals": "CREATE FAILED",
                   "Next": "Fail"
                 }
