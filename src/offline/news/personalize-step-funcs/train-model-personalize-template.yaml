@@ -193,6 +193,8 @@ Resources:
               "Parameters": {
                 "FunctionName": "rs-${Stage}-${SyncSolutionVersionLambda}",
                 "Payload": {
+                  "bucket.$": "$.Bucket",
+                  "prefix.$": "$.S3Prefix",
                   "updateSolutionVersion.$": "$.UpdateSolutionVersion"
                 }
               },
