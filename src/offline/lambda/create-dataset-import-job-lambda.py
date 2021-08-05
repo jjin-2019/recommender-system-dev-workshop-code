@@ -74,7 +74,7 @@ def do_handler(event, context):
         jobName="dataset-import-job-{}".format(int(time.time())),
         datasetArn=dataset_arn,
         dataSource={
-            "dataLocation": "s3://{}/{}/system/personalize-data/{}".format(bucket, s3_key_prefix, file_name)
+            "dataLocation": "s3://{}/{}/system/personalize-data/data/{}".format(bucket, s3_key_prefix, file_name)
         },
         roleArn=role_arn
     )

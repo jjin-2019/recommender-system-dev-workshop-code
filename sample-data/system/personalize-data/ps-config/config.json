@@ -5,7 +5,7 @@
   "InteractionDatasetName": "NewsInteractionDataset",
   "EventTrackerName": "NewsEventTracker",
   "SolutionName": "userPersonalizeSolution",
-  "SolutionVersion": "588dcb84",
+  "SolutionVersionArn": "arn:aws:personalize:ap-northeast-1:466154167985:solution/userPersonalizeSolutionNew/5286e329",
   "CampaignName": "gcr-rs-dev-workshop-news-UserPersonalize-campaign",
   "UserFileName": "personalize_user.csv",
   "ItemFileName": "personalize_item.csv",
