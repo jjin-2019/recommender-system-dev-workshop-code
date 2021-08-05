@@ -98,7 +98,7 @@ Resources:
                   "S3Prefix.$": "$.S3Prefix",
                   "ps_config.$": "$.ps_config"
                 },
-                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-BatchUpdateStepFunc",
+                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-BatchUpdateStepFunc-Personalize",
                 "Name.$": "States.Format('oa{}', $$.Execution.Name)"
               },
               "End": true
