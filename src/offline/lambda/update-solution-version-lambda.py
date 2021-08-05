@@ -26,9 +26,11 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    dataset_group_name = event['datasetGroupName']
-    solution_name = event['solutionName']
-    training_mode = event['trainingMode']
+    ps_config = event['ps_config']
+    ps_config_json = json.loads(ps_config)
+    dataset_group_name = ps_config_json['datasetGroupName']
+    solution_name = ps_config_json['solutionName']
+    training_mode = ps_config_json['trainingMode']
 
     dataset_group_arn = get_dataset_group_arn(dataset_group_name)
     print("dataset_group_arn:{}".format(dataset_group_arn))
@@ -44,9 +46,10 @@ def do_handler(event, context):
     solution_version_arn = response["solutionVersionArn"]
     print("solution_version_arn:{}".format(solution_version_arn))
 
-    return success_response(json.dumps({
+    return {
+        "statusCode": 200,
         "solution_version_arn": solution_version_arn
-    }))
+    }
 
 
 def get_solution_arn(dataset_group_arn, solution_name):
@@ -63,23 +66,3 @@ def get_dataset_group_arn(dataset_group_name):
     for dataset_group in response["datasetGroups"]:
         if dataset_group["name"] == dataset_group_name:
             return dataset_group["datasetGroupArn"]
-
-
-def success_response(message):
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }
-
-
-def error_response(message):
-    return {
-        "statusCode": 400,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }

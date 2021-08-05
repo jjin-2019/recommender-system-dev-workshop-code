@@ -19,7 +19,6 @@ api_router = APIRouter()
 
 s3client = boto3.client('s3')
 
-
 step_funcs = None
 account_id = ''
 
@@ -38,8 +37,7 @@ MANDATORY_ENV_VARS = {
     'TEST': 'False',
     'USE_PERSONALIZE_PLUGIN': 'False',
     'PERSONALIZE_RECIPE': 'user-personalization',
-    'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Dataset-Group',
-    'EVENT_TRACKER': 'NewsEventTracker'
+    'LOCAL_DATA_FOLDER': '/tmp/rs-data/'
 }
 
 
@@ -277,21 +275,21 @@ def offline_status_get(exec_arn: str):
     return res
 
 
-@api_router.post('/api/v1/event/add_user/{user_id}', response_model=SimpleResponse, tags=["event"])
-def add_new_user(userEntity: UserEntity):
-    logging.info("Add new user to AWS Personalize Service...")
-    personalize_events.put_users(
-        datasetArn=user_dataset_arn,
-        users=[
-            {
-                'userId': userEntity.user_id,
-                'properties': str({
-                    'gender': userEntity.user_sex
-                })
-            },
-        ]
-    )
-    return gen_simple_response('OK')
+# @api_router.post('/api/v1/event/add_user/{user_id}', response_model=SimpleResponse, tags=["event"])
+# def add_new_user(userEntity: UserEntity):
+#     logging.info("Add new user to AWS Personalize Service...")
+#     personalize_events.put_users(
+#         datasetArn=user_dataset_arn,
+#         users=[
+#             {
+#                 'userId': userEntity.user_id,
+#                 'properties': str({
+#                     'gender': userEntity.user_sex
+#                 })
+#             },
+#         ]
+#     )
+#     return gen_simple_response('OK')
 
 
 def send_event_to_default(data):
@@ -330,6 +328,8 @@ def start_step_funcs(trainReq):
     logging.info("start_step_funcs: {}, trainReq={}".format(
         stateMachineArn, trainReq))
 
+    ps_config = load_ps_config()
+
     try:
         res = step_funcs.start_execution(
             stateMachineArn=stateMachineArn,
@@ -337,7 +337,8 @@ def start_step_funcs(trainReq):
             input=json.dumps({
                 'change_type': trainReq.change_type,
                 'Bucket': bucket,
-                'S3Prefix': key_prefix
+                'S3Prefix': key_prefix,
+                'ps_config': ps_config
             })
         )
     except Exception as e:
@@ -359,6 +360,17 @@ def start_step_funcs(trainReq):
                                          stopDate=None)
                                      )
     return res
+
+
+def load_ps_config():
+    s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
+    s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
+    file_name = 'system/personalize-data/ps-config/config.json'
+    file_key = os.path.join(s3_prefix, file_name)
+    s3 = boto3.resource('s3')
+    object_str = s3.Object(s3_bucket, file_key).get()[
+        'Body'].read().decode('utf-8')
+    return object_str
 
 
 app.include_router(api_router, dependencies=[Depends(log_json)])

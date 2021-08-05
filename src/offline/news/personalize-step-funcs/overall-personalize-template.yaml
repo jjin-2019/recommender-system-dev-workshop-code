@@ -31,42 +31,6 @@ Parameters:
     Type: String
     Default: SNSMessageLambda
 
-  UpdateSolutionVersionLambda:
-    Type: String
-    Default: UpdateSolutionVersionLambda
-
-  DatasetGroupName:
-    Type: String
-    Default: GCR-RS-News-Dataset-Group
-
-  UserDatasetName:
-    Type: String
-    Default: NewsUserDataset
-
-  ItemDatasetName:
-    Type: String
-    Default: NewsItemDataset
-
-  InteractionDatasetName:
-    Type: String
-    Default: NewsInteractionDataset
-
-  UserFileName:
-    Type: String
-    Default: personalize_user.csv
-
-  ItemFileName:
-    Type: String
-    Default: personalize_item.csv
-
-  InteractionFileName:
-    Type: String
-    Default: personalize_interaction.csv
-
-  TrainingMode:
-    Type: String
-    Default: FULL
-
 Resources:
   OverallStepFuncPersonalize:
     Type: AWS::StepFunctions::StateMachine
@@ -127,8 +91,7 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName",
-                  "SolutionName.$": "$.SolutionName"
+                  "ps_config.$": "$.ps_config"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-BatchUpdateStepFunc",
                 "Name.$": "States.Format('oa{}', $$.Execution.Name)"
@@ -143,9 +106,7 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName",
-                  "DatasetName.$": "$.UserDatasetName",
-                  "FileName.$": "$.UserFileName"
+                  "ps_config.$": "$.ps_config"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-UserNewStepFunc-Personalize",
                 "Name.$": "States.Format('ou{}', $$.Execution.Name)"
@@ -160,9 +121,7 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName",
-                  "DatasetName.$": "$.ItemDatasetName",
-                  "FileName.$": "$.ItemFileName"
+                  "ps_config.$": "$.ps_config"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-ItemNewStepFunc-Personalize",
                 "Name.$": "States.Format('oc{}', $$.Execution.Name)"
@@ -177,11 +136,7 @@ Resources:
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
                   "S3Prefix.$": "$.S3Prefix",
-                  "DatasetGroupName.$": "$.DatasetGroupName",
-                  "DatasetName.$": "$.InteractionDatasetName",
-                  "SolutionName.$": "$.SolutionName",
-                  "TrainingMode.$": "$.TrainingMode",
-                  "FileName.$": "$.InteractionFileName"
+                  "ps_config.$": "$.ps_config"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-TrainModelStepFunc-Personalize",
                 "Name.$": "States.Format('ot{}', $$.Execution.Name)"

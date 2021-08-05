@@ -60,9 +60,7 @@ Resources:
               "Parameters": {
                 "FunctionName": "rs-${Stage}-${UpdateSolutionVersionLambda}",
                 "Payload": {
-                  "datasetGroupName.$": "$.DatasetGroupName",
-                  "solutionName.$": "$.SolutionName",
-                  "trainingMode.$": "$.TrainingMode"
+                  "ps_config.$": "$.ps_config"
                 }
               },
               "ResultSelector": {
@@ -126,9 +124,7 @@ Resources:
               "Parameters": {
                 "FunctionName": "rs-${Stage}-${UpdateCampaignLambda}",
                 "Payload": {
-                  "datasetGroupName.$": "$.DatasetGroupName",
-                  "solutionName.$": "$.SolutionName",
-                  "trainingMode.$": "$.TrainingMode",
+                  "ps_config.$": "$.ps_config",
                   "updateSolutionVersion.$": "$.UpdateSolutionVersion"
                 }
               },
@@ -164,23 +160,23 @@ Resources:
                 {
                   "Or": [
                     {
-                      "Variable": "$.CheckCampaignStatus.body.campaign_status",
+                      "Variable": "$.CheckCampaignStatus.Payload.campaign_status",
                       "StringEquals": "CREATE PENDING"
                     },
                     {
-                      "Variable": "$.CheckCampaignStatus.body.campaign_status",
+                      "Variable": "$.CheckCampaignStatus.Payload.campaign_status",
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
                   "Next": "Wait 1 min for updating campaign"
                 },
                 {
-                  "Variable": "$.CheckCampaignStatus.body.campaign_status",
+                  "Variable": "$.CheckCampaignStatus.Payload.campaign_status",
                   "StringEquals": "ACTIVE",
                   "Next": "Succeed"
                 },
                 {
-                  "Variable": "$.CheckCampaignStatus.body.campaign_status",
+                  "Variable": "$.CheckCampaignStatus.Payload.campaign_status",
                   "StringEquals": "CREATE FAILED",
                   "Next": "Fail"
                 }

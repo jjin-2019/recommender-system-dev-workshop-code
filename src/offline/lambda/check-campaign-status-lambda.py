@@ -26,35 +26,18 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    update_campaign = event['UpdateCampaign']
-    campaign_arn = update_campaign['body']['campaign_arn']
+    body = json.loads(event['UpdateCampaign']['Payload']['body'])
+    campaign_arn = body['campaign_arn']
     describe_campaign_response = personalize.describe_campaign(
         campaignArn=campaign_arn
     )
     status = describe_campaign_response["campaign"]["status"]
     print("Campaign Status: {}".format(status))
 
-    return success_response(json.dumps({
-        "campaign_status": status,
-        "campaign_arn": campaign_arn
-    }))
-
-
-def success_response(message):
     return {
         "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
+        "campaign_status": status,
+        "campaign_arn": campaign_arn
     }
 
 
-def error_response(message):
-    return {
-        "statusCode": 400,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }

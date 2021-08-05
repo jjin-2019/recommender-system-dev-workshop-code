@@ -26,19 +26,19 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    dataset_group_name = event['datasetGroupName']
-    solution_name = event['solutionName']
-    update_solution_version = event['updateSolutionVersion']
-    campaign_name = event['campaignName']
+    ps_config = event['ps_config']
+    ps_config_json = json.loads(ps_config)
+    dataset_group_name = ps_config_json['datasetGroupName']
+    solution_name = ps_config_json['solutionName']
+    campaign_name = ps_config_json['campaignName']
+    body = json.loads(event['updateSolutionVersion']['Payload']['body'])
+    solution_version_arn = body['solution_version_arn']
 
     dataset_group_arn = get_dataset_group_arn(dataset_group_name)
     print("dataset_group_arn:{}".format(dataset_group_arn))
 
     solution_arn = get_solution_arn(dataset_group_arn, solution_name)
     print("solution_arn:{}".format(solution_arn))
-
-    solution_version_arn = update_solution_version['body']['solution_version_arn']
-    print("solution_version_arn:{}".format(solution_arn))
 
     campaign_arn = get_campaign_arn(solution_arn, campaign_name)
     print("campaign_arn:{}".format(campaign_arn))
@@ -52,9 +52,10 @@ def do_handler(event, context):
     campaign_arn = response['campaignArn']
     print("campaign_arn:{}".format(campaign_arn))
 
-    return success_response(json.dumps({
+    return {
+        "statusCode": 200,
         "campaign_arn": campaign_arn
-    }))
+    }
 
 
 def get_solution_arn(dataset_group_arn, solution_name):
@@ -81,22 +82,3 @@ def get_campaign_arn(solution_arn, campaign_name):
         if campaign["name"] == campaign_name:
             return campaign["campaignArn"]
 
-
-def success_response(message):
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }
-
-
-def error_response(message):
-    return {
-        "statusCode": 400,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }

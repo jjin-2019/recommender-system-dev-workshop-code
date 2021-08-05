@@ -26,35 +26,18 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    update_solution_version = event['updateSolutionVersion']
-    solution_version_arn = update_solution_version['body']['solution_version_arn']
+    body = json.loads(event['updateSolutionVersion']['Payload']['body'])
+    solution_version_arn = body['solution_version_arn']
     describe_solution_version_response = personalize.describe_solution_version(
         solutionVersionArn=solution_version_arn
     )
     status = describe_solution_version_response["solutionVersion"]["status"]
     print("Solution Version Status: {}".format(status))
 
-    return success_response(json.dumps({
-        "solution_version_status": status,
-        "solution_version_arn": solution_version_arn
-    }))
-
-
-def success_response(message):
     return {
         "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
+        "solution_version_status": status,
+        "solution_version_arn": solution_version_arn
     }
 
 
-def error_response(message):
-    return {
-        "statusCode": 400,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }

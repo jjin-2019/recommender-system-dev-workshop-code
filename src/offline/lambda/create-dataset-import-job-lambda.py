@@ -37,9 +37,11 @@ def do_handler(event, context):
 
     bucket = event['bucket']
     s3_key_prefix = event['prefix']
-    dataset_group_name = event['datasetGroupName']
-    dataset_name = event['datasetName']
-    file_name = event['fileName']
+    ps_config = event['ps_config']
+    ps_config_json = json.loads(ps_config)
+    dataset_group_name = ps_config_json['datasetGroupName']
+    dataset_name = ps_config_json['datasetName']
+    file_name = ps_config_json['fileName']
 
     dataset_group_arn = get_dataset_group_arn(dataset_group_name)
     print("dataset_group_arn:{}".format(dataset_group_arn))
@@ -66,9 +68,10 @@ def do_handler(event, context):
     dataset_import_job_arn = create_dataset_import_job_response['datasetImportJobArn']
     print("dataset_import_job_arn:{}".format(dataset_import_job_arn))
 
-    return success_response(json.dumps({
+    return {
+        "statusCode": 200,
         "dataset_import_job_arn": dataset_import_job_arn
-    }))
+    }
 
 
 def get_dataset_group_arn(dataset_group_name):
@@ -87,21 +90,3 @@ def get_dataset_arn(dataset_group_arn, dataset_name):
             return dataset["datasetArn"]
 
 
-def success_response(message):
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }
-
-
-def error_response(message):
-    return {
-        "statusCode": 400,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": message
-    }

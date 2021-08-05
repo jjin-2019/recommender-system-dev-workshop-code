@@ -65,9 +65,7 @@ Resources:
                 "Payload": {
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
-                  "datasetGroupName.$": "$.DatasetGroupName",
-                  "datasetName.$": "$.DatasetName",
-                  "fileName.$": "$.FileName"
+                  "ps_config.$": "$.ps_config"
                 }
               },
               "ResultSelector": {
@@ -102,23 +100,23 @@ Resources:
                 {
                   "Or": [
                     {
-                      "Variable": "$.CheckInteractionDatsetImportJobStatus.body.dataset_import_job_status",
+                      "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",
                       "StringEquals": "CREATE PENDING"
                     },
                     {
-                      "Variable": "$.CheckInteractionDatsetImportJobStatus.body.dataset_import_job_status",
+                      "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
                   "Next": "Wait 30 Seconds For Dataset Import Job"
                 },
                 {
-                  "Variable": "$.CheckInteractionDatsetImportJobStatus.body.dataset_import_job_status",
+                  "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",
                   "StringEquals": "ACTIVE",
                   "Next": "Succeed"
                 },
                 {
-                  "Variable": "$.CheckInteractionDatsetImportJobStatus.body.dataset_import_job_status",
+                  "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",
                   "StringEquals": "CREATE FAILED",
                   "Next": "Fail"
                 }
