@@ -44,6 +44,7 @@ all_stepfuncs=(
 batch-update-personalize
 item-new-personalize
 user-new-personalize
+interaction-new-personalize
 train-model-personalize
 overall-personalize
 )

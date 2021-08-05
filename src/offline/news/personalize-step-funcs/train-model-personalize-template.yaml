@@ -177,7 +177,7 @@ Resources:
                 {
                   "Variable": "$.CheckCampaignStatus.Payload.campaign_status",
                   "StringEquals": "ACTIVE",
-                  "Next": "Succeed"
+                  "Next": "Sync Solution Version to S3"
                 },
                 {
                   "Variable": "$.CheckCampaignStatus.Payload.campaign_status",

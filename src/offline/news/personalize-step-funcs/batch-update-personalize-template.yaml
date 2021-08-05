@@ -76,7 +76,7 @@ Resources:
                 "Payload": {
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
-                  "ps_config.$": "$.ps_config",
+                  "ps_config.$": "$.ps_config"
                 }
               },
               "ResultSelector": {
