@@ -109,7 +109,7 @@ Resources:
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
-                  "Next": "Wait 30 Seconds For Dataset Import Job"
+                  "Next": "Wait 5 Minutes For Dataset Import Job"
                 },
                 {
                   "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
