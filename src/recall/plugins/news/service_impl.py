@@ -126,6 +126,18 @@ class ServiceImpl:
                     mt, len(current_list_with_score)))
                 recall_items.append(single_recall_result)
 
+    def recall_by_personalize(self, news_ids, recall_wrap, recall_items, multiple_shot_record):
+
+        for news_id in news_ids:
+            response = personalize_runtime.get_recommendations(
+                campaignArn=ps_config['CampaignArn'],
+                itemId=news_id,
+                numResults=100
+            )
+            item_list = response['itemList']
+
+
+
     def merge_recall_result(self, news_ids, **config_dict):
         ########################################
         # 召回融合排序逻辑
@@ -140,6 +152,9 @@ class ServiceImpl:
         # 根据用户画像做召回
         # comment for dev workshop
         # self.recall_by_portrait(user_portrait, recall_wrap, recall_items, multiple_shot_record)
+
+        # 根据personalize-sims做召回
+        self.recall_by_personalize(news_ids, recall_wrap, recall_items, multiple_shot_record)
 
         # recall_merge_cnt = 100
         n_last_len = recall_wrap['config']['merge_cnt']

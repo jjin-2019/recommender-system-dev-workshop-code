@@ -12,12 +12,6 @@ fi
 
 echo "Stage=$Stage"
 
-Method=$2
-if [[ -z $Method ]]; then
-  Method='customer'
-fi
-
-echo "Method=$Method"
 
 AWS_CMD="aws"
 if [[ -n $PROFILE ]]; then
@@ -46,19 +40,13 @@ S3Prefix=sample-data-news
 PARAMETER_OVERRIDES="Bucket=$BUCKET S3Prefix=$S3Prefix Stage=$Stage"
 echo PARAMETER_OVERRIDES:$PARAMETER_OVERRIDES
 
-if [ $Method == 'customer' ]; then
-
-
-
 all_stepfuncs=(
-steps
-dashboard
-batch-update
-user-new
-item-new
-#item-new-assembled
-train-model
-overall
+batch-update-personalize
+item-new-personalize
+user-new-personalize
+interaction-new-personalize
+train-model-personalize
+overall-personalize
 )
 
 for name in ${all_stepfuncs[@]};
@@ -88,16 +76,19 @@ do
     --parameter-overrides ${PARAMETER_OVERRIDES} \
     --capabilities CAPABILITY_NAMED_IAM
 
+    echo "finish deploy"
 
-     StackStatus=$($AWS_CMD  cloudformation  describe-stacks --region ${REGION} --stack-name ${STACK_NAME} --output table | grep StackStatus)
-     echo ${StackStatus} |  egrep "(CREATE_COMPLETE)|(UPDATE_COMPLETE)" > /dev/null
+    StackStatus=$($AWS_CMD  cloudformation  describe-stacks --region ${REGION} --stack-name ${STACK_NAME} --output table | grep StackStatus)
+    echo ${StackStatus} |  egrep "(CREATE_COMPLETE)|(UPDATE_COMPLETE)" > /dev/null
 
-     if [[ $? -ne 0 ]]; then
-         echo "error!!!  ${StackStatus}"
-         exit 1
-     fi
+#    if [[ $? -ne 0 ]]; then
+#        echo "error  ${StackStatus}"
+#        exit 1
+#    fi
 
-    rm tmp_*.yaml > /dev/null 2>&1  || true
+
+    rm tmp_*.yaml > /dev/null 2>&1 || true
+
 
 done
 

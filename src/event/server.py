@@ -246,7 +246,8 @@ def start_train_post(trainReq: TrainRequest):
     return res
 
 
-@api_router.post('/api/v1/event/start_update', response_model=StateMachineStatusResponse, tags=["event"])
+@api_router.post('/api/v1/event/st'
+                 'art_update', response_model=StateMachineStatusResponse, tags=["event"])
 def start_update_post(trainReq: TrainRequest):
     if trainReq.change_type not in ['MODEL', 'CONTENT', 'ACTION']:
         raise HTTPException(status_code=405, detail="invalid change_type")
@@ -302,13 +303,13 @@ def send_event_to_personalize(data):
     try:
         for item_id in data['clicked_item_ids']:
             personalize_events.put_events(
-                trackingId=event_tracker_id,
+                trackingId=ps_config['EventTrackerId'],
                 userId=data['user_id'],
                 sessionId=data['user_id'],
                 eventList=[{
                     'sentAt': int(time.time()),
                     'itemId': item_id,
-                    'eventType': 'CLICK'
+                    'eventType': ps_config['EventType']
                 }]
             )
     except Exception as e:
@@ -327,7 +328,9 @@ def start_step_funcs(trainReq):
     logging.info("start_step_funcs: {}, trainReq={}".format(
         stateMachineArn, trainReq))
 
-    ps_config = load_ps_config()
+    ps_file_path = "system/personalize-data/ps-config/config.json"
+    ps_config = load_config(ps_file_path)
+    ps_config_str = json.dumps(ps_config)
 
     try:
         res = step_funcs.start_execution(
@@ -337,7 +340,7 @@ def start_step_funcs(trainReq):
                 'change_type': trainReq.change_type,
                 'Bucket': bucket,
                 'S3Prefix': key_prefix,
-                'ps_config': ps_config
+                'ps_config': ps_config_str
             })
         )
     except Exception as e:
@@ -361,14 +364,15 @@ def start_step_funcs(trainReq):
     return res
 
 
-def load_ps_config():
+def load_config(file_path):
     s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
     s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
-    file_key = '{}/system/personalize-data/ps-config/config.json'.format(s3_prefix)
+    file_key = '{}/{}'.format(s3_prefix, file_path)
     s3 = boto3.resource('s3')
     object_str = s3.Object(s3_bucket, file_key).get()[
         'Body'].read().decode('utf-8')
-    return object_str
+    config_json = json.loads(object_str)
+    return config_json
 
 
 app.include_router(api_router, dependencies=[Depends(log_json)])
@@ -389,85 +393,46 @@ def init():
         account_id = boto3.client(
             'sts', aws_region).get_caller_identity()['Account']
 
-    global personalize
-    global personalize_runtime
+    global ps_config
+    ps_file_path = "system/personalize-data/ps-config/config.json"
+    ps_config = load_config(ps_file_path)
+
     global personalize_events
-    personalize = boto3.client('personalize', MANDATORY_ENV_VARS['AWS_REGION'])
-    personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
     personalize_events = boto3.client(service_name='personalize-events', region_name=MANDATORY_ENV_VARS['AWS_REGION'])
-    global dataset_group_arn
-    global event_tracker_arn
-    global event_tracker_id
-    dataset_group_arn = get_dataset_group_arn()
-    event_tracker_arn = get_event_tracker_arn()
-    event_tracker_id = get_event_tracking_id()
 
 
 def get_step_funcs_name():
-    # Change for Personalize
-    # stage = MANDATORY_ENV_VARS['Stage']
-    # scenarios = MANDATORY_ENV_VARS['Scenarios']
-    # inference = MANDATORY_ENV_VARS['Inference']
-    # step_funcs_name = "rs-{}-{}-OverallStepFunc-{}".format(stage, scenarios, inference)
-    # return step_funcs_name
 
-    namespace = MANDATORY_ENV_VARS['POD_NAMESPACE']
-    known_mappings = {
-        'rs-news-dev-ns': 'rs-dev-News-OverallStepFunc',
-        'rs-movie-dev-ns': 'rs-dev-Movie-OverallStepFunc',
-        'rs-news-demo-ns': 'rs-demo-News-OverallStepFunc',
-        'rs-movie-demo-ns': 'rs-demo-Movie-OverallStepFunc',
-        'rs-beta': 'rsdemo-News-OverallStepFunc'
-    }
-    step_funcs_name = known_mappings.get(namespace, 'rsdemo-News-OverallStepFunc')
+    event_config_file_path = "feature/config/event-config.json"
+    event_config = load_config(event_config_file_path)
 
-    # change for dev-workshop
-    s3bucket = MANDATORY_ENV_VARS['S3_BUCKET']
-    if '-dev-workshop-' in s3bucket and namespace == 'rs-news-dev-ns':
-        step_funcs_name = 'rs-dev-workshop-News-OverallStepFunc'
-
-    # change for personalize plugin
-    if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
-        step_funcs_name = "rs-dev-workshop-News-OverallStepFunc-Personalize"
-
-    logging.info("get_step_funcs_name return: namespace: {}, step funcs name: {}".format(namespace, step_funcs_name))
+    stage = MANDATORY_ENV_VARS['Stage']
+    scenarios = MANDATORY_ENV_VARS['Scenarios']
+    inference = event_config['Inference']
+    step_funcs_name = "rs-{}-{}-OverallStepFunc-{}".format(stage, scenarios, inference)
     return step_funcs_name
 
-
-def get_dataset_group_arn():
-    datasetGroups = personalize.list_dataset_groups()
-    for dataset_group in datasetGroups["datasetGroups"]:
-        if dataset_group["name"] == MANDATORY_ENV_VARS['PERSONALIZE_DATASET_GROUP']:
-            logging.info("Dataset Group Arn:{}".format(dataset_group["datasetGroupArn"]))
-            return dataset_group["datasetGroupArn"]
-
-
-def get_event_tracker_arn():
-    eventTrackers = personalize.list_event_trackers(
-        datasetGroupArn=dataset_group_arn
-    )
-    for event_tracker in eventTrackers["eventTrackers"]:
-        if event_tracker['name'] == MANDATORY_ENV_VARS['EVENT_TRACKER']:
-            logging.info("Event Tracker Arn:{}".format(event_tracker["eventTrackerArn"]))
-            return event_tracker["eventTrackerArn"]
-
-
-def get_event_tracking_id():
-    eventTracker = personalize.describe_event_tracker(
-        eventTrackerArn=event_tracker_arn
-    )
-    logging.info("Event Tracker ID:{}".format(eventTracker["eventTracker"]["trackingId"]))
-    return eventTracker["eventTracker"]["trackingId"]
-
-
-def get_user_dataset_arn():
-    datasets = personalize.list_datasets(
-        datasetGroupArn=dataset_group_arn
-    )
-    for dataset in datasets['datasets']:
-        if dataset['datasetType'] == 'USERS':
-            logging.info('User Dataset Arn:{}'.format(dataset['datasetArn']))
-            return dataset['datasetArn']
+    # namespace = MANDATORY_ENV_VARS['POD_NAMESPACE']
+    # known_mappings = {
+    #     'rs-news-dev-ns': 'rs-dev-News-OverallStepFunc',
+    #     'rs-movie-dev-ns': 'rs-dev-Movie-OverallStepFunc',
+    #     'rs-news-demo-ns': 'rs-demo-News-OverallStepFunc',
+    #     'rs-movie-demo-ns': 'rs-demo-Movie-OverallStepFunc',
+    #     'rs-beta': 'rsdemo-News-OverallStepFunc'
+    # }
+    # step_funcs_name = known_mappings.get(namespace, 'rsdemo-News-OverallStepFunc')
+    #
+    # # change for dev-workshop
+    # s3bucket = MANDATORY_ENV_VARS['S3_BUCKET']
+    # if '-dev-workshop-' in s3bucket and namespace == 'rs-news-dev-ns':
+    #     step_funcs_name = 'rs-dev-workshop-News-OverallStepFunc'
+    #
+    # # change for personalize plugin
+    # if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
+    #     step_funcs_name = "rs-dev-workshop-News-OverallStepFunc-Personalize"
+    #
+    # logging.info("get_step_funcs_name return: namespace: {}, step funcs name: {}".format(namespace, step_funcs_name))
+    # return step_funcs_name
 
 
 if __name__ == "__main__":

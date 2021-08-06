@@ -3,7 +3,7 @@ import pickle
 
 
 if __name__ == "__main__":
-    file = "/Users/jilizm/recommender-system-dev-workshop-code/sample-data/notification/inverted-list/recall_config_v1.pickle"
+    file = "/Users/jilizm/recommender-system-dev-workshop-code/sample-data/feature/content/inverted-list/news_id_news_property_dict.pickle"
     infile = open(file, 'rb')
     dict = pickle.load(infile)
     infile.close()
