@@ -73,11 +73,11 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.CreateInteractionDatasetImportJob",
-              "Next": "Wait 30 Seconds For Dataset Import Job"
+              "Next": "Wait 5 Minutes For Dataset Import Job"
             },
-            "Wait 30 Seconds For Dataset Import Job": {
+            "Wait 5 Minutes For Dataset Import Job": {
               "Type": "Wait",
-              "Seconds": 30,
+              "Seconds": 300,
               "Next": "Check Interaction Dataset Import Job Status"
             },
             "Check Interaction Dataset Import Job Status": {
@@ -109,7 +109,7 @@ Resources:
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
-                  "Next": "Wait 30 Seconds For Dataset Import Job"
+                  "Next": "Wait 5 Minutes For Dataset Import Job"
                 },
                 {
                   "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",

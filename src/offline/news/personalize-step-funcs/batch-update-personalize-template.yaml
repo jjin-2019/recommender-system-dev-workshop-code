@@ -84,11 +84,11 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.CreateBatchInferenceJob",
-              "Next": "Wait 30 Seconds For Batch Inference Job"
+              "Next": "Wait 5 Minutes For Batch Inference Job"
             },
-            "Wait 30 Seconds For Batch Inference Job": {
+            "Wait 5 Minutes For Batch Inference Job": {
               "Type": "Wait",
-              "Seconds": 30,
+              "Seconds": 300,
               "Next": "Check Batch Inference Job Status"
             },
             "Check Batch Inference Job Status": {
@@ -120,7 +120,7 @@ Resources:
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
-                  "Next": "Wait 30 Seconds For Batch Inference Job"
+                  "Next": "Wait 5 Minutes For Batch Inference Job"
                 },
                 {
                   "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",

@@ -71,11 +71,11 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.UpdateSolutionVersion",
-              "Next": "Wait 1 min for updating solution version"
+              "Next": "Wait 5 Minutes for updating solution version"
             },
-            "Wait 1 min for updating solution version": {
+            "Wait 5 Minutes for updating solution version": {
               "Type": "Wait",
-              "Seconds": 60,
+              "Seconds": 300,
               "Next": "Check Solution Version Status"
             },
             "Check Solution Version Status": {
@@ -107,7 +107,7 @@ Resources:
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
-                  "Next": "Wait 1 min for updating solution version"
+                  "Next": "Wait 5 Minutes for updating solution version"
                 },
                 {
                   "Variable": "$.CheckSolutionVersionStatus.Payload.solution_version_status",
@@ -136,11 +136,11 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.UpdateCampaign",
-              "Next": "Wait 1 min for updating campaign"
+              "Next": "Wait 5 Minutes for updating campaign"
             },
-            "Wait 1 min for updating campaign": {
+            "Wait 5 Minutes for updating campaign": {
               "Type": "Wait",
-              "Seconds": 60,
+              "Seconds": 300,
               "Next": "Check Campaign Status"
             },
             "Check Campaign Status": {
@@ -172,7 +172,7 @@ Resources:
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
-                  "Next": "Wait 1 min for updating campaign"
+                  "Next": "Wait 5 Minutes for updating campaign"
                 },
                 {
                   "Variable": "$.CheckCampaignStatus.Payload.campaign_status",

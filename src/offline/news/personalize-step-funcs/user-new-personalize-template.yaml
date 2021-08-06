@@ -73,11 +73,11 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.CreateUserDatasetImportJob",
-              "Next": "Wait 30 Seconds For Dataset Import Job"
+              "Next": "Wait 5 Minutes For Dataset Import Job"
             },
-            "Wait 30 Seconds For Dataset Import Job": {
+            "Wait 5 Minutes For Dataset Import Job": {
               "Type": "Wait",
-              "Seconds": 30,
+              "Seconds": 300,
               "Next": "Check User Dataset Import Job Status"
             },
             "Check User Dataset Import Job Status": {
