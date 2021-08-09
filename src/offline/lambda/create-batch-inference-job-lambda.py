@@ -53,10 +53,7 @@ def do_handler(event, context):
     elif solution_name == "simsSolution":
         file_name = "ps-sims"
     else:
-        return {
-            "statusCode": 400,
-            "error": "Invalid Solution Name!"
-        }
+        raise AttributeError("Invalid Solution Name")
 
     response = personalize.create_batch_inference_job(
         solutionVersionArn=solution_version_arn,

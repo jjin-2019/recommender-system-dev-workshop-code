@@ -52,10 +52,7 @@ def do_handler(event, context):
         dataset_name = ps_config_json['InteractionDatasetName']
         file_name = ps_config_json['InteractionFileName']
     else:
-        return {
-            "statusCode": 400,
-            "error": "Invalid Dataset Type!"
-        }
+        raise AttributeError("Invalid Dataset Type")
 
     dataset_group_arn = get_dataset_group_arn(dataset_group_name)
     print("dataset_group_arn:{}".format(dataset_group_arn))

@@ -59,7 +59,7 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "file_list": [
-                    "system/personalize-data/batch-input/personalize_item.csv"
+                    "system/personalize-data/batch-input/ps-complete"
                   ]
                 }
               },
