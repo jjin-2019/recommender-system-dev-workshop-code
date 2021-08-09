@@ -5,7 +5,8 @@
     "entities": 10,
     "words": 10,
     "portrait_type": 5,
-    "portrait_keywords": 10
+    "portrait_keywords": 10,
+    "ps_sims": 10
   },
   "pos_weights": {
     "type": {
@@ -31,6 +32,10 @@
     "portrait_keywords": {
       "w": 0.5,
       "b": 0.2
+    },
+    "ps_sims": {
+      "w": 0.5,
+      "b": 0.2
     }
   },
   "mt_weights": {
@@ -39,7 +44,8 @@
     "entities": 1.0,
     "words": 0.1,
     "portrait_type": 0.8,
-    "portrait_keywords": 0.7
+    "portrait_keywords": 0.7,
+    "ps_sims": 1.0
   },
   "pop_mt_list": [
     "type",
@@ -49,5 +55,6 @@
   "portrait_mt_list": [
     "type"
   ],
+  "ps_mt": "ps_sims",
   "merge_cnt": 100
 }

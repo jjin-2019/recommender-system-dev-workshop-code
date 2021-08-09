@@ -1,31 +1,35 @@
 import json
+import os
 import pickle
 
 
 if __name__ == "__main__":
-    file = "/Users/jilizm/recommender-system-dev-workshop-code/sample-data/feature/content/inverted-list/news_id_news_property_dict.pickle"
-    infile = open(file, 'rb')
-    dict = pickle.load(infile)
-    infile.close()
-    print(json.dumps(dict, indent= 2))
-    #
-    # json_file ={
-    #         "DatasetGroupName": "GCR-RS-News-Dataset-Group",
-    #         "UserDatasetName": "NewsUserDataset",
-    #         "ItemDatasetName": "NewsItemDataset",
-    #         "InteractionDatasetName": "NewsInteractionDataset",
-    #         "EventTrackerName": "NewsEventTracker",
-    #         "SolutionName": "userPersonalizeSolution",
-    #         "SolutionVersionArn": "arn:aws:personalize:ap-northeast-1:466154167985:solution/userPersonalizeSolutionNew/5286e329",
-    #         "CampaignName": "gcr-rs-dev-workshop-news-UserPersonalize-campaign",
-    #         "UserFileName": "personalize_user.csv",
-    #         "ItemFileName": "personalize_item.csv",
-    #         "InteractionFileName": "personalize_interaction.csv",
-    #         "TrainingMode": "UPDATE"
-    # }
-    # print(json_file.__str__())
-    # string = json.dumps(json_file)
-    # print(str(string))
-    # test = json.loads(string)
-    # print(test)
-    # print(test['SolutionVersionArn'])
+
+    MANDATORY_ENV_VARS = {
+        'RECALL_CONFIG': 'recall_config.pickle',
+
+        'NEWS_ID_PROPERTY': 'news_id_news_property_dict.pickle',
+        'ENTITY_ID_NEWS_IDS': 'news_entities_news_ids_dict.pickle',
+        'KEYWORD_NEWS_IDS': 'news_keywords_news_ids_dict.pickle',
+        'NEWS_TYPE_NEWS_IDS': 'news_type_news_ids_dict.pickle',
+        'WORD_ID_NEWS_IDS': 'news_words_news_ids_dict.pickle',
+
+        'LOCAL_DATA_FOLDER': '/tmp/rs-data/',
+
+        'RECALL_PER_NEWS_ID': 10,
+        'SIMILAR_ENTITY_THRESHOLD': 20,
+        'RECALL_THRESHOLD': 2.0,
+        'RECALL_MERGE_NUMBER': 20,
+
+        'REDIS_HOST': 'localhost',
+        'REDIS_PORT': 6379,
+
+        'PORTRAIT_SERVICE_ENDPOINT': 'http://portrait:5300'
+    }
+
+    if 'REDIS_PORT'  in MANDATORY_ENV_VARS:
+        print(True)
+    else:
+        print(False)
+    print(os.environ.get('LOCAL_GIT_DIRECTORY'))
+

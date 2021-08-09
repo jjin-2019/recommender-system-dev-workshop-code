@@ -1,7 +1,19 @@
 import logging
+import os
+
 import numpy as np
 import json
 import itertools
+import boto3
+
+MANDATORY_ENV_VARS = {
+    'AWS_REGION': 'ap-northeast-1',
+    'S3_BUCKET': 'aws-gcr-rs-sol-demo-ap-southeast-1-522244679887',
+    'S3_PREFIX': 'sample-data'
+}
+
+personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+ps_config = {}
 
 logging.basicConfig(level=logging.INFO)
 
@@ -31,6 +43,7 @@ class ServiceImpl:
         self.entity_index = entity_index_l
         self.word_index = word_index_l
         self.entity_embedding = entity_embedding_l
+
 
     def analyze_shot_record(self, record, id):
         if id in record.keys():
@@ -127,15 +140,30 @@ class ServiceImpl:
                 recall_items.append(single_recall_result)
 
     def recall_by_personalize(self, news_ids, recall_wrap, recall_items, multiple_shot_record):
-
+        #调用AWS Personalize Sims Recipe, 根据最近阅读记录做召回
+        # 1. ps_sims
+        topn_wrap = recall_wrap['config']['mt_topn']
+        weights = recall_wrap['config']['pos_weights']
+        ps_method = recall_wrap['config']['ps_mt']
         for news_id in news_ids:
             response = personalize_runtime.get_recommendations(
                 campaignArn=ps_config['CampaignArn'],
                 itemId=news_id,
-                numResults=100
+                numResults=topn_wrap[ps_method]
             )
-            item_list = response['itemList']
+            item_list_ids = [item['itemId'] for item in response['itemList']]
 
+            single_recall_result = {}
+            current_list_with_score = []
+
+            current_list_with_score = current_list_with_score + \
+                self.recall_pos_score(news_id, item_list_ids[0:topn_wrap[ps_method]],
+                                      weights[ps_method], multiple_shot_record)
+
+            single_recall_result['method'] = ps_method
+            single_recall_result['list'] = current_list_with_score
+            logging.info("ps-sims method find {} candidates".format(len(current_list_with_score)))
+            recall_items.append(single_recall_result)
 
 
     def merge_recall_result(self, news_ids, **config_dict):
@@ -197,3 +225,29 @@ class ServiceImpl:
 
         logging.info('Recall has done & return -> {}'.format(recall_result))
         return recall_result
+
+
+def load_config(file_path):
+    s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
+    s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
+    file_key = '{}/{}'.format(s3_prefix, file_path)
+    s3 = boto3.resource('s3')
+    object_str = s3.Object(s3_bucket, file_key).get()[
+        'Body'].read().decode('utf-8')
+    config_json = json.loads(object_str)
+    return config_json
+
+
+def init():
+    # Check out environments
+    for var in MANDATORY_ENV_VARS:
+        if var not in os.environ:
+            logging.error("Mandatory variable {%s} is not set, using default value {%s}.", var, MANDATORY_ENV_VARS[var])
+        else:
+            MANDATORY_ENV_VARS[var]=os.environ.get(var)
+
+    global personalize_runtime
+    personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+    global ps_config
+    ps_file_path = "system/personalize-data/ps-config/config.json"
+    ps_config = load_config(ps_file_path)

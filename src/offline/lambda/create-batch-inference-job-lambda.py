@@ -46,11 +46,11 @@ def do_handler(event, context):
     print("role_arn:{}".format(role_arn))
 
     solution_name = ps_config_json['SolutionName']
-    if solution_name == "userPersonalizeSolution":
+    if solution_name == "UserPersonalizeSolution":
         file_name = "ps-complete"
-    elif solution_name == "rankingSolution":
+    elif solution_name == "RankingSolution":
         file_name = "ps-rank"
-    elif solution_name == "simsSolution":
+    elif solution_name == "SimsSolution":
         file_name = "ps-sims"
     else:
         raise AttributeError("Invalid Solution Name")

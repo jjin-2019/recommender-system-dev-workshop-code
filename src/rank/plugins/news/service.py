@@ -368,8 +368,8 @@ def init():
     rank_file_path = "feature/config/rank-config.json"
     rank_config = load_config(rank_file_path)
 
+    global ps_config
     if rank_config['Model'] == 'ps-rank':
-        global ps_config
         ps_file_path = "system/personalize-data/ps-config/config.json"
         ps_config = load_config(ps_file_path)
 

@@ -26,7 +26,7 @@ def lambda_handler(event, context):
 
 
 def do_handler(event, context):
-    batch_inference_job_arn = event['UpdateCampaign']['Payload']['batch_inference_job_arn']
+    batch_inference_job_arn = event['createBatchInferenceJob']['Payload']['batch_inference_job_arn']
     describe_batch_inference_job_response = personalize.describe_batch_inference_job(
         batchInferenceJobArn=batch_inference_job_arn
     )
