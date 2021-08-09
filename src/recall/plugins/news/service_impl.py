@@ -8,7 +8,7 @@ import boto3
 
 MANDATORY_ENV_VARS = {
     'AWS_REGION': 'ap-northeast-1',
-    'S3_BUCKET': 'aws-gcr-rs-sol-demo-ap-southeast-1-522244679887',
+    'S3_BUCKET': 'aws-gcr-rs-sol-dev-workshop-ap-northeast-1-466154167985',
     'S3_PREFIX': 'sample-data'
 }
 
