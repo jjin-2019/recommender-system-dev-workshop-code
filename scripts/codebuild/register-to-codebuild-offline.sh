@@ -140,6 +140,7 @@ projects_dir=(
   "news/filter-batch"
   "news/inverted-list"
   "news/step-funcs"
+  "news/personalize-step-funcs"
 )
 
 for project in ${projects_dir[@]}; do
