@@ -35,8 +35,7 @@ MANDATORY_ENV_VARS = {
     'S3_PREFIX': 'sample-data',
     'POD_NAMESPACE': 'default',
     'TEST': 'False',
-    'USE_PERSONALIZE_PLUGIN': 'False',
-    'PERSONALIZE_RECIPE': 'user-personalization',
+    'METHOD': 'ps-complete'
 }
 
 
@@ -229,9 +228,11 @@ def online_inference(user_id: str, clickItemList: ClickedItemList):
         'clicked_item_ids': [item.id for item in clickItemList.clicked_item_list]
     }
 
-    if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
+    if MANDATORY_ENV_VARS['METHOD'] == "ps-complete":
+        logging.info("send click info to personalize service ...")
         message = send_event_to_personalize(data)
     else:
+        logging.info("send click info to default process ...")
         message = send_event_to_default(data)
 
     res = gen_simple_response(message)

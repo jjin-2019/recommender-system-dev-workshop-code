@@ -29,10 +29,8 @@ MANDATORY_ENV_VARS = {
     'AWS_REGION': 'ap-northeast-1',
     'S3_BUCKET': 'aws-gcr-rs-sol-demo-ap-southeast-1-522244679887',
     'S3_PREFIX': 'sample-data',
-    'USE_PERSONALIZE_PLUGIN': 'False',
-    'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Dataset-Group',
-    'PERSONALIZE_SOLUTION': 'userPersonalizeSolutionNew',
-    'PERSONALIZE_CAMPAIGN': 'gcr-rs-dev-workshop-news-UserPersonalize-campaign'
+    'METHOD': 'customer'
+
 }
 
 
@@ -128,7 +126,7 @@ def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId
                     recommendType: str = 'recommend'):
     logging.info("retrieve_get_v2() enter")
     if recommendType == "recommend":
-        if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
+        if MANDATORY_ENV_VARS['METHOD'] == "ps-rank":
             item_list = get_recommend_from_personalize(user_id)
         else:
             item_list = get_recommend_from_default(user_id, recommendType)
@@ -250,8 +248,9 @@ def init():
     personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
 
     global ps_config
-    ps_file_path = "system/personalize-data/ps-config/config.json"
-    ps_config = load_config(ps_file_path)
+    if MANDATORY_ENV_VARS['METHOD'] == "ps-rank":
+        ps_file_path = "system/personalize-data/ps-config/config.json"
+        ps_config = load_config(ps_file_path)
 
 
 if __name__ == "__main__":

@@ -42,6 +42,7 @@ MANDATORY_ENV_VARS = {
 
     # model file
     'MODEL_FILE': 'model.tar.gz',
+    'METHOD': 'customer'
 }
 
 
@@ -219,7 +220,7 @@ class Rank(service_pb2_grpc.RankServicer):
         logging.info('user_id -> {}'.format(user_id))
         logging.info('recall_result -> {}'.format(recall_result))
 
-        if rank_config['Model'] == 'ps-rank':
+        if MANDATORY_ENV_VARS['METHOD'] == 'ps-rank':
             logging.info("get rank result from personalize model...")
             rank_result = self.generate_rank_result_from_personalize(user_id, recall_result)
         else:
@@ -364,12 +365,9 @@ def init():
 
     global personalize_runtime
     personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
-    global rank_config
-    rank_file_path = "feature/config/rank-config.json"
-    rank_config = load_config(rank_file_path)
 
     global ps_config
-    if rank_config['Model'] == 'ps-rank':
+    if MANDATORY_ENV_VARS['METHOD'] == 'ps-rank':
         ps_file_path = "system/personalize-data/ps-config/config.json"
         ps_config = load_config(ps_file_path)
 

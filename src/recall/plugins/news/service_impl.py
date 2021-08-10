@@ -9,7 +9,8 @@ import boto3
 MANDATORY_ENV_VARS = {
     'AWS_REGION': 'ap-northeast-1',
     'S3_BUCKET': 'aws-gcr-rs-sol-dev-workshop-ap-northeast-1-466154167985',
-    'S3_PREFIX': 'sample-data'
+    'S3_PREFIX': 'sample-data',
+    'METHOD': "ps-complete"
 }
 
 personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
@@ -182,7 +183,8 @@ class ServiceImpl:
         # self.recall_by_portrait(user_portrait, recall_wrap, recall_items, multiple_shot_record)
 
         # 根据personalize-sims做召回
-        self.recall_by_personalize(news_ids, recall_wrap, recall_items, multiple_shot_record)
+        if MANDATORY_ENV_VARS['METHOD'] == "ps-sims":
+            self.recall_by_personalize(news_ids, recall_wrap, recall_items, multiple_shot_record)
 
         # recall_merge_cnt = 100
         n_last_len = recall_wrap['config']['merge_cnt']
