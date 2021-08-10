@@ -31,6 +31,14 @@ Parameters:
     Type: String
     Default: SNSMessageLambda
 
+  CreateBatchInferenceJobLambda:
+    Type: String
+    Default: CreateBatchInferenceJobLambda
+
+  CheckBatchInferenceJobStatusLambda:
+    Type: String
+    Default: CheckBatchInferenceJobStatusLambda
+
 Resources:
   BatchUpdateStepFuncPersonalize:
     Type: AWS::StepFunctions::StateMachine
@@ -39,98 +47,97 @@ Resources:
       StateMachineName: !Sub rs-${Stage}-News-BatchUpdateStepFunc-Personalize
       DefinitionString: !Sub |
         {
-          "StartAt": "Action processing",
+          "StartAt": "Pre check",
+          "TimeoutSeconds": 36000,
           "States": {
-            "Action processing": {
+            "Pre check": {
               "Type": "Task",
-              "Resource": "arn:${AWS::Partition}:states:::states:startExecution.sync:2",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
-                "Input": {
-                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
-                  "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
-                },
-                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-ActionPreprocessingStepFunc",
-                "Name.$": "States.Format('{}', $$.Execution.Name)"
+                "FunctionName": "rs-${Stage}-${PreCheckLabmda}",
+                "Payload": {
+                  "bucket.$": "$.Bucket",
+                  "prefix.$": "$.S3Prefix",
+                  "file_list": [
+                    "system/personalize-data/batch-input/ps-complete"
+                  ]
+                }
               },
-              "ResultPath": "$.ActionProcessing",
-              "Next": "Portrait batch"
+              "ResultSelector": {
+                "Payload.$": "$.Payload"
+              },
+              "ResultPath": "$.Precheck",
+              "Next": "Create Batch Inference Job"
             },
-            "Portrait batch": {
+            "Create Batch Inference Job": {
               "Type": "Task",
-              "Resource": "arn:${AWS::Partition}:states:::states:startExecution.sync:2",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
-                "Input": {
-                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
-                  "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
-                },
-                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-PortraitBatchStepFunc",
-                "Name.$": "States.Format('{}', $$.Execution.Name)"
+                "FunctionName": "rs-${Stage}-${CreateBatchInferenceJobLambda}",
+                "Payload": {
+                  "bucket.$": "$.Bucket",
+                  "prefix.$": "$.S3Prefix",
+                  "ps_config.$": "$.ps_config"
+                }
               },
-              "ResultPath": "$.PortraitBatch",
-              "Next": "Recall batch"
+              "ResultSelector": {
+                "Payload.$": "$.Payload"
+              },
+              "ResultPath": "$.CreateBatchInferenceJob",
+              "Next": "Wait 5 Minutes For Batch Inference Job"
             },
-            "Recall batch": {
-              "Type": "Task",
-              "Resource": "arn:${AWS::Partition}:states:::states:startExecution.sync:2",
-              "Parameters": {
-                "Input": {
-                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
-                  "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
-                },
-                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-RecallBatchStepFunc",
-                "Name.$": "States.Format('{}', $$.Execution.Name)"
-              },
-              "ResultPath": "$.RecallBatch",
-              "Next": "Rank batch"
+            "Wait 5 Minutes For Batch Inference Job": {
+              "Type": "Wait",
+              "Seconds": 300,
+              "Next": "Check Batch Inference Job Status"
             },
-            "Rank batch": {
+            "Check Batch Inference Job Status": {
               "Type": "Task",
-              "Resource": "arn:${AWS::Partition}:states:::states:startExecution.sync:2",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
-                "Input": {
-                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
-                  "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
-                },
-                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-RankBatchStepFunc",
-                "Name.$": "States.Format('{}', $$.Execution.Name)"
+                "FunctionName": "rs-${Stage}-${CheckBatchInferenceJobStatusLambda}",
+                "Payload": {
+                  "createBatchInferenceJob.$": "$.CreateBatchInferenceJob"
+                }
               },
-              "ResultPath": "$.RankBatch",
-              "Next": "Filter batch"
+              "ResultSelector": {
+                "Payload.$": "$.Payload"
+              },
+              "ResultPath": "$.CheckBatchInferenceJobStatus",
+              "Next": "Batch Inference Job Status Choice"
             },
-            "Filter batch": {
-              "Type": "Task",
-              "Resource": "arn:${AWS::Partition}:states:::states:startExecution.sync:2",
-              "Parameters": {
-                "Input": {
-                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
-                  "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
+            "Batch Inference Job Status Choice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Or": [
+                    {
+                      "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
+                      "StringEquals": "CREATE PENDING"
+                    },
+                    {
+                      "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
+                      "StringEquals": "CREATE IN_PROGRESS"
+                    }
+                  ],
+                  "Next": "Wait 5 Minutes For Batch Inference Job"
                 },
-                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-FilterBatchStepFunc",
-                "Name.$": "States.Format('{}', $$.Execution.Name)"
-              },
-              "ResultPath": "$.FilterBatch",
-              "Next": "Send notification"
+                {
+                  "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
+                  "StringEquals": "ACTIVE",
+                  "Next": "Succeed"
+                },
+                {
+                  "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
+                  "StringEquals": "CREATE FAILED",
+                  "Next": "Fail"
+                }
+              ],
+              "Default": "Fail"
             },
-            "Send notification": {
-              "Type": "Task",
-              "Resource": "arn:${AWS::Partition}:states:::states:startExecution.sync:2",
-              "Parameters": {
-                "Input": {
-                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
-                  "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix",
-                  "file_type": "batch-update"
-                },
-                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-NotificationStepFunc",
-                "Name.$": "States.Format('{}', $$.Execution.Name)"
-              },
-              "Next": "Succeed",
-              "ResultPath": "$.Notification"
+            "Fail": {
+              "Type": "Fail",
+              "Error": "Batch Inference Job Failed"
             },
             "Succeed": {
               "Type": "Succeed"

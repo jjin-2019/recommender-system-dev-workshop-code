@@ -109,3 +109,6 @@ aws elasticache create-cache-cluster \
   --cache-parameter-group default.redis6.x \
   --security-group-ids $REDIS_SECURITY_GROUP_ID \
   --cache-subnet-group-name $CACHE_SUBNET_GROUP_NAME
+
+# 5 clean personalize service
+./clean-personalize.sh

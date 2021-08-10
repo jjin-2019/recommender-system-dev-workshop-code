@@ -60,6 +60,14 @@ spec:
             value: dkn_context_embedding.npy
           - name: WORD_EMBEDDING_NPY
             value: dkn_word_embedding.npy
+          - name: AWS_REGION
+            value: $(AWS_REGION)
+          - name: S3_BUCKET
+            value: $(S3_BUCKET)
+          - name: S3_PREFIX
+            value: $(S3_PREFIX)
+          - name: METHOD
+            value: $(METHOD)
         volumeMounts:
           - name: persistent-storage
             mountPath: /rs-data

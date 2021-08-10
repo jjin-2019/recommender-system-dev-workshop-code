@@ -40,18 +40,24 @@ lambda_funcs_name=(
  rs-${Stage}-CheckSolutionVersionStatusLambda
  rs-${Stage}-UpdateCampaignLambda
  rs-${Stage}-CheckCampaignStatusLambda
+ rs-${Stage}-CreateBatchInferenceJobLambda
+ rs-${Stage}-CheckBatchInferenceJobStatusLambda
+ rs-${Stage}-SyncSolutionVersionLambda
 )
 
 lambda_funcs_code=(
  precheck-lambda.zip
  s3-util-lambda.zip
  sns-message-lambda.zip
- personalize/create-dataset-import-job-lambda.zip
- personalize/check-dataset-import-job-status-lambda.zip
- personalize/update-solution-version-lambda.zip
- personalize/check-solution-version-status-lambda.zip
- personalize/update-campaign-lambda.zip
- personalize/check-campaign-status-lambda.zip
+ create-dataset-import-job-lambda.zip
+ check-dataset-import-job-status-lambda.zip
+ update-solution-version-lambda.zip
+ check-solution-version-status-lambda.zip
+ update-campaign-lambda.zip
+ check-campaign-status-lambda.zip
+ create-batch-inference-job-lambda.zip
+ check-batch-inference-job-status-lambda.zip
+ sync-solution-version-lambda.zip
 )
 
 i=0

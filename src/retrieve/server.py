@@ -3,7 +3,7 @@ import math
 import os
 from typing import List
 from urllib.request import Request
-
+import json
 import boto3
 import requests
 import uvicorn as uvicorn
@@ -15,6 +15,9 @@ import datetime
 
 app = FastAPI()
 
+personalize_runtime = boto3.client('personalize-runtime', 'ap-northeast-1')
+ps_config = {}
+
 MANDATORY_ENV_VARS = {
     # 'REDIS_HOST': 'localhost',
     # 'REDIS_PORT': 6379,
@@ -23,10 +26,11 @@ MANDATORY_ENV_VARS = {
     'FILTER_HOST': 'filter',
     'FILTER_PORT': '5200',
     'TEST': 'False',
-    'USE_PERSONALIZE_PLUGIN': 'False',
-    'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Dataset-Group',
-    'PERSONALIZE_SOLUTION': 'userPersonalizeSolution',
-    'PERSONALIZE_CAMPAIGN': 'gcr-rs-dev-workshop-news-UserPersonalize-campaign'
+    'AWS_REGION': 'ap-northeast-1',
+    'S3_BUCKET': 'aws-gcr-rs-sol-demo-ap-southeast-1-522244679887',
+    'S3_PREFIX': 'sample-data',
+    'METHOD': 'customer'
+
 }
 
 
@@ -122,7 +126,7 @@ def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId
                     recommendType: str = 'recommend'):
     logging.info("retrieve_get_v2() enter")
     if recommendType == "recommend":
-        if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
+        if MANDATORY_ENV_VARS['METHOD'] == "ps-rank":
             item_list = get_recommend_from_personalize(user_id)
         else:
             item_list = get_recommend_from_default(user_id, recommendType)
@@ -207,7 +211,7 @@ def get_recommend_from_personalize(user_id):
     item_list = []
     # trigger personalize api
     get_recommendations_response = personalize_runtime.get_recommendations(
-        campaignArn=campaign_arn,
+        campaignArn=ps_config['CampaignArn'],
         userId=str(user_id),
     )
     result_list = get_recommendations_response['itemList']
@@ -221,6 +225,17 @@ def get_recommend_from_personalize(user_id):
     return item_list
 
 
+def load_config(file_path):
+    s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
+    s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
+    file_key = '{}/{}'.format(s3_prefix, file_path)
+    s3 = boto3.resource('s3')
+    object_str = s3.Object(s3_bucket, file_key).get()[
+        'Body'].read().decode('utf-8')
+    config_json = json.loads(object_str)
+    return config_json
+
+
 def init():
     # Check out environments
     for var in MANDATORY_ENV_VARS:
@@ -229,46 +244,13 @@ def init():
         else:
             MANDATORY_ENV_VARS[var] = str(os.environ.get(var))
 
-    global personalize
     global personalize_runtime
-    global personalize_events
-    personalize = boto3.client('personalize', MANDATORY_ENV_VARS['AWS_REGION'])
     personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
-    personalize_events = boto3.client(service_name='personalize-events', region_name=MANDATORY_ENV_VARS['AWS_REGION'])
-    global dataset_group_arn
-    global solution_arn
-    global campaign_arn
-    dataset_group_arn = get_dataset_group_arn()
-    solution_arn = get_solution_arn()
-    campaign_arn = get_campaign_arn()
 
-
-def get_dataset_group_arn():
-    datasetGroups = personalize.list_dataset_groups()
-    for dataset_group in datasetGroups["datasetGroups"]:
-        if dataset_group["name"] == MANDATORY_ENV_VARS['PERSONALIZE_DATASET_GROUP']:
-            logging.info("Dataset Group Arn:{}".format(dataset_group["datasetGroupArn"]))
-            return dataset_group["datasetGroupArn"]
-
-
-def get_solution_arn():
-    solutions = personalize.list_solutions(
-        datasetGroupArn=dataset_group_arn
-    )
-    for solution in solutions["solutions"]:
-        if solution['name'] == MANDATORY_ENV_VARS['PERSONALIZE_SOLUTION']:
-            logging.info("Solution Arn:{}".format(solution["solutionArn"]))
-            return solution["solutionArn"]
-
-
-def get_campaign_arn():
-    campaigns = personalize.list_campaigns(
-        solutionArn=solution_arn
-    )
-    for campaign in campaigns["campaigns"]:
-        if campaign["name"] == MANDATORY_ENV_VARS['PERSONALIZE_CAMPAIGN']:
-            logging.info("Campaign Arn:{}".format(campaign["campaignArn"]))
-            return campaign["campaignArn"]
+    global ps_config
+    if MANDATORY_ENV_VARS['METHOD'] == "ps-rank":
+        ps_file_path = "system/personalize-data/ps-config/config.json"
+        ps_config = load_config(ps_file_path)
 
 
 if __name__ == "__main__":

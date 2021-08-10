@@ -23,22 +23,19 @@ resources:
 images:
 - name: rs/demo
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/demo
-  newTag: fc04bcbecab36b5ea068aafd2cd1fe4b22720908
+  newTag: 85c5612d40fca126e2b4e8c2fbd3ebb73ece1ce7
 - name: rs/event
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/event
-  newTag: 462d2cd9b52c31a128796ba2f1dbb317e5d8b8ea
+  newTag: 6ad2275d15760b62171294537f9977e977800b0a
 - name: rs/filter
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/filter
-  newTag: 6926702d3b00b59abde19cd72de823756717b510
+  newTag: 9ab9ba34b87e24b5ee3c779735f55880cace0c0b
 - name: rs/filter-plugin
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/filter-plugin
-  newTag: news-6926702d3b00b59abde19cd72de823756717b510
+  newTag: news-9ab9ba34b87e24b5ee3c779735f55880cace0c0b
 - name: rs/loader
   newName: public.ecr.aws/t8u1z3c8/rs/loader
   newTag: latest
-- name: rs/personalize
-  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/personalize
-  newTag: 6926702d3b00b59abde19cd72de823756717b510
 - name: rs/portrait
   newName: public.ecr.aws/t8u1z3c8/rs/portrait
   newTag: latest
@@ -47,19 +44,19 @@ images:
   newTag: latest
 - name: rs/rank
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/rank
-  newTag: cd72ef7eeaee0c2b618ba54619c9ed596034f9f7
+  newTag: e1fbfb1d76f7c22c1f8e8c6a393e7fa5b5e24ce9
 - name: rs/rank-plugin
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/rank-plugin
-  newTag: news-cd72ef7eeaee0c2b618ba54619c9ed596034f9f7
+  newTag: news-e1fbfb1d76f7c22c1f8e8c6a393e7fa5b5e24ce9
 - name: rs/recall
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall
-  newTag: 0b4cab32aa14eaeac47c3cc859dcb10f90fca4a0
+  newTag: 2d3de27c5b5c1984bd6cfaf68dfc455952ac1946
 - name: rs/recall-plugin
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall-plugin
-  newTag: news-0b4cab32aa14eaeac47c3cc859dcb10f90fca4a0
+  newTag: news-2d3de27c5b5c1984bd6cfaf68dfc455952ac1946
 - name: rs/retrieve
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/retrieve
-  newTag: 462d2cd9b52c31a128796ba2f1dbb317e5d8b8ea
+  newTag: e4d14ace56d85851b7b2fffded162214fdf48583
 - name: rs/ui
   newName: public.ecr.aws/t8u1z3c8/rs/ui
   newTag: latest
@@ -140,6 +137,13 @@ vars:
 - fieldref:
     fieldPath: data.local_data_folder
   name: LOCAL_DATA_FOLDER
+  objref:
+    apiVersion: v1
+    kind: ConfigMap
+    name: rs-news-dev-config
+- fieldref:
+    fieldPath: data.method
+  name: METHOD
   objref:
     apiVersion: v1
     kind: ConfigMap

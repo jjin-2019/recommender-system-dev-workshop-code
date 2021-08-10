@@ -12,6 +12,12 @@ fi
 
 echo "Stage=$Stage"
 
+Method=$2
+if [[ -z $Method ]]; then
+  Method='customer'
+fi
+
+echo "Method=$Method"
 
 AWS_CMD="aws"
 if [[ -n $PROFILE ]]; then
@@ -39,6 +45,10 @@ S3Prefix=sample-data-news
 
 PARAMETER_OVERRIDES="Bucket=$BUCKET S3Prefix=$S3Prefix Stage=$Stage"
 echo PARAMETER_OVERRIDES:$PARAMETER_OVERRIDES
+
+if [ $Method == 'customer' ]; then
+
+
 
 all_stepfuncs=(
 steps

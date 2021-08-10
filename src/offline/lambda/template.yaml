@@ -106,7 +106,7 @@ Resources:
       Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
       CodeUri:
         Bucket: !Ref Bucket
-        Key: !Sub "${S3Prefix}/code/lambda/personalize/create-dataset-import-job-lambda.zip"
+        Key: !Sub "${S3Prefix}/code/lambda/create-dataset-import-job-lambda.zip"
       Timeout: 900
 
   CheckDatasetImportJobStatusLambda:
@@ -117,7 +117,7 @@ Resources:
       Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
       CodeUri:
         Bucket: !Ref Bucket
-        Key: !Sub "${S3Prefix}/code/lambda/personalize/check-dataset-import-job-status-lambda.zip"
+        Key: !Sub "${S3Prefix}/code/lambda/check-dataset-import-job-status-lambda.zip"
       Timeout: 900
 
   UpdateSolutionVersionLambda:
@@ -128,7 +128,7 @@ Resources:
       Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
       CodeUri:
         Bucket: !Ref Bucket
-        Key: !Sub "${S3Prefix}/code/lambda/personalize/update-solution-version-lambda.zip"
+        Key: !Sub "${S3Prefix}/code/lambda/update-solution-version-lambda.zip"
       Timeout: 900
 
   CheckSolutionVersionStatusLambda:
@@ -139,7 +139,7 @@ Resources:
       Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
       CodeUri:
         Bucket: !Ref Bucket
-        Key: !Sub "${S3Prefix}/code/lambda/personalize/check-solution-version-status-lambda.zip"
+        Key: !Sub "${S3Prefix}/code/lambda/check-solution-version-status-lambda.zip"
       Timeout: 900
 
   UpdateCampaignLambda:
@@ -150,7 +150,7 @@ Resources:
       Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
       CodeUri:
         Bucket: !Ref Bucket
-        Key: !Sub "${S3Prefix}/code/lambda/personalize/update-campaign-lambda.zip"
+        Key: !Sub "${S3Prefix}/code/lambda/update-campaign-lambda.zip"
       Timeout: 900
 
   CheckCampaignStatusLambda:
@@ -161,5 +161,38 @@ Resources:
       Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
       CodeUri:
         Bucket: !Ref Bucket
-        Key: !Sub "${S3Prefix}/code/lambda/personalize/check-campaign-status-lambda.zip"
+        Key: !Sub "${S3Prefix}/code/lambda/check-campaign-status-lambda.zip"
+      Timeout: 900
+
+  CreateBatchInferenceJobLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub rs-${Stage}-CreateBatchInferenceJobLambda
+      Handler: create-batch-inference-job-lambda.lambda_handler
+      Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
+      CodeUri:
+        Bucket: !Ref Bucket
+        Key: !Sub "${S3Prefix}/code/lambda/create-batch-inference-job-lambda.zip"
+      Timeout: 900
+
+  CheckBatchInferenceJobStatusLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub rs-${Stage}-CheckBatchInferenceJobStatusLambda
+      Handler: check-batch-inference-job-status-lambda.lambda_handler
+      Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
+      CodeUri:
+        Bucket: !Ref Bucket
+        Key: !Sub "${S3Prefix}/code/lambda/check-batch-inference-job-status-lambda.zip"
+      Timeout: 900
+
+  SyncSolutionVersionLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub rs-${Stage}-SyncSolutionVersionLambda
+      Handler: sync-solution-version-lambda.lambda_handler
+      Role: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}
+      CodeUri:
+        Bucket: !Ref Bucket
+        Key: !Sub "${S3Prefix}/code/lambda/sync-solution-version-lambda.zip"
       Timeout: 900

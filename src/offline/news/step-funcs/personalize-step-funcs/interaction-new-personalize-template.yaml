@@ -28,11 +28,11 @@ Parameters:
     Default: CheckDatasetImportJobStatusLambda
 
 Resources:
-  UserNewStepFuncPersonalize:
+  InteractionNewStepFuncPersonalize:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}"
-      StateMachineName: !Sub rs-${Stage}-News-UserNewStepFunc-Personalize
+      StateMachineName: !Sub rs-${Stage}-News-InteractionNewStepFunc-Personalize
       DefinitionString: !Sub |
         {
           "StartAt": "Pre check",
@@ -47,7 +47,7 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "file_list": [
-                    "system/personalize-data/data/personalize_user.csv"
+                    "system/personalize-data/data/personalize_interactions.csv"
                   ]
                 }
               },
@@ -55,9 +55,9 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.Precheck",
-              "Next": "Create User Dataset Import Job"
+              "Next": "Create Interaction Dataset Import Job"
             },
-            "Create User Dataset Import Job": {
+            "Create Interaction Dataset Import Job": {
               "Type": "Task",
               "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
@@ -66,58 +66,58 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "ps_config.$": "$.ps_config",
-                  "datasetType": "USER"
+                  "datasetType": "INTERACTION"
                 }
               },
               "ResultSelector": {
                 "Payload.$": "$.Payload"
               },
-              "ResultPath": "$.CreateUserDatasetImportJob",
+              "ResultPath": "$.CreateInteractionDatasetImportJob",
               "Next": "Wait 5 Minutes For Dataset Import Job"
             },
             "Wait 5 Minutes For Dataset Import Job": {
               "Type": "Wait",
               "Seconds": 300,
-              "Next": "Check User Dataset Import Job Status"
+              "Next": "Check Interaction Dataset Import Job Status"
             },
-            "Check User Dataset Import Job Status": {
+            "Check Interaction Dataset Import Job Status": {
               "Type": "Task",
               "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
                 "FunctionName": "rs-${Stage}-${CheckDatasetImportJobStatusLambda}",
                 "Payload": {
-                  "createDatasetImportJob.$": "$.CreateUserDatasetImportJob"
+                  "createDatasetImportJob.$": "$.CreateInteractionDatasetImportJob"
                 }
               },
               "ResultSelector": {
                 "Payload.$": "$.Payload"
               },
-              "ResultPath": "$.CheckUserDatsetImportJobStatus",
-              "Next": "User Dataset Import Job Status Choice"
+              "ResultPath": "$.CheckInteractionDatsetImportJobStatus",
+              "Next": "Interaction Dataset Import Job Status Choice"
             },
-            "User Dataset Import Job Status Choice": {
+            "Interaction Dataset Import Job Status Choice": {
               "Type": "Choice",
               "Choices": [
                 {
                   "Or": [
                     {
-                      "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
+                      "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",
                       "StringEquals": "CREATE PENDING"
                     },
                     {
-                      "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
+                      "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
                   "Next": "Wait 5 Minutes For Dataset Import Job"
                 },
                 {
-                  "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
+                  "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",
                   "StringEquals": "ACTIVE",
                   "Next": "Succeed"
                 },
                 {
-                  "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
+                  "Variable": "$.CheckInteractionDatsetImportJobStatus.Payload.dataset_import_job_status",
                   "StringEquals": "CREATE FAILED",
                   "Next": "Fail"
                 }

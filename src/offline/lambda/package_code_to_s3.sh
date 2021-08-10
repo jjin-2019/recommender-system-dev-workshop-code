@@ -41,12 +41,15 @@ lambda_funcs=(
   precheck-lambda
   s3-util-lambda
   sns-message-lambda
-  personalize/create-dataset-import-job-lambda
-  personalize/check-dataset-import-job-status-lambda
-  personalize/update-solution-version-lambda
-  personalize/check-solution-version-status-lambda
-  personalize/update-campaign-lambda
-  personalize/check-campaign-status-lambda
+  create-dataset-import-job-lambda
+  check-dataset-import-job-status-lambda
+  update-solution-version-lambda
+  check-solution-version-status-lambda
+  update-campaign-lambda
+  check-campaign-status-lambda
+  create-batch-inference-job-lambda
+  check-batch-inference-job-status-lambda
+  sync-solution-version-lambda
 )
 
 rm -rf deploy >/dev/null 2>&1
@@ -54,7 +57,7 @@ rm -rf deploy >/dev/null 2>&1
 mkdir deploy/
 cd deploy/
 
-pip install --target ./package requests >/dev/null
+pip install --target ./package requests==2.23.0 >/dev/null
 
 if [[ $? -ne 0 ]]; then
     echo "error!!!"

@@ -5,7 +5,6 @@ import json
 import uuid
 from datetime import datetime
 import pickle
-
 import boto3
 import numpy as np
 import requests
@@ -32,11 +31,9 @@ MANDATORY_ENV_VARS = {
     'NEWS_ID_FEATURE': 'news_id_news_feature_dict.pickle',
     'MODEL_EXTRACT_DIR': '/opt/ml/model/',
     'DEMO_SERVICE_ENDPOINT': 'http://demo:5900',
-    'RANK_MODEL': 'personalize',
     'AWS_REGION': 'ap-northeast-1',
-    'PERSONALIZE_DATASET_GROUP': 'GCR-RS-News-Ranking-Dataset-Group',
-    'PERSONALIZE_SOLUTION': 'rankingSolution',
-    'PERSONALIZE_CAMPAIGN': 'gcr-rs-dev-workshop-news-ranking-campaign',
+    'S3_BUCKET': 'aws-gcr-rs-sol-dev-workshop-ap-northeast-1-466154167985',
+    'S3_PREFIX': 'sample-data',
 
     # numpy file
     'ENTITY_EMBEDDING_NPY': 'dkn_entity_embedding.npy',
@@ -45,6 +42,7 @@ MANDATORY_ENV_VARS = {
 
     # model file
     'MODEL_FILE': 'model.tar.gz',
+    'METHOD': 'customer'
 }
 
 
@@ -57,7 +55,8 @@ action_model_type = 'action-model'
 embedding_type = 'embedding'
 pickle_type = 'inverted-list'
 
-personalize = boto3.client('personalize', MANDATORY_ENV_VARS['AWS_REGION'])
+rank_config = {}
+ps_config = {}
 personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
 
 
@@ -221,7 +220,7 @@ class Rank(service_pb2_grpc.RankServicer):
         logging.info('user_id -> {}'.format(user_id))
         logging.info('recall_result -> {}'.format(recall_result))
 
-        if MANDATORY_ENV_VARS['RANK_MODEL'] == 'personalize':
+        if MANDATORY_ENV_VARS['METHOD'] == 'ps-rank':
             logging.info("get rank result from personalize model...")
             rank_result = self.generate_rank_result_from_personalize(user_id, recall_result)
         else:
@@ -251,10 +250,10 @@ class Rank(service_pb2_grpc.RankServicer):
         return rankProcessResponse
 
     def generate_rank_result_from_personalize(self, user_id, recall_result):
-        logging.info('generate_rank_result using personalize model start')
+        logging.info('generate_rank_result using personalize rank model start')
         item_list = [str(int(recall_item)) for recall_item in recall_result]
         response = personalize_runtime.get_personalized_ranking(
-            campaignArn=campaign_arn,
+            campaignArn=ps_config['CampaignArn'],
             inputList=item_list,
             userId=user_id
         )
@@ -263,31 +262,9 @@ class Rank(service_pb2_grpc.RankServicer):
         for rank_item in rank_list:
             rank_result[rank_item['itemId']] = rank_item['score'] * len(rank_list)
 
-        rank_summary = {'model': 'personalize', 'data': rank_result}
+        rank_summary = {'model': 'ps-rank', 'data': rank_result}
         return rank_summary
 
-    def get_dataset_group_arn(self):
-        response = personalize.list_dataset_groups()
-        for dataset_group in response["datasetGroups"]:
-            if dataset_group["name"] == MANDATORY_ENV_VARS['PERSONALIZE_DATASET_GROUP']:
-                logging.info("Dataset Group Arn:{}".format(dataset_group["datasetGroupArn"]))
-                return dataset_group["datasetGroupArn"]
-
-    def get_campaign_arn(self):
-        solutions = personalize.list_solutions(
-            datasetGroupArn=dataset_group_arn
-        )
-        solution_arn = ''
-        for solution in solutions["solutions"]:
-            if solution['name'] == MANDATORY_ENV_VARS['PERSONALIZE_SOLUTION']:
-                solution_arn = solution["solutionArn"]
-        campaigns = personalize.list_campaigns(
-            solutionArn=solution_arn
-        )
-        for campaign in campaigns["campaigns"]:
-            if campaign["name"] == MANDATORY_ENV_VARS['PERSONALIZE_CAMPAIGN']:
-                logging.info("Campaign Arn:{}".format(campaign["campaignArn"]))
-                return campaign["campaignArn"]
 
     def generate_rank_result_from_dkn(self, recall_result, user_clicks_set):
         logging.info('generate_rank_result using dkn model start')
@@ -366,6 +343,18 @@ class Rank(service_pb2_grpc.RankServicer):
         rank_summary = {'model': 'dkn', 'data': rank_result}
         return rank_summary
 
+
+def load_config(file_path):
+    s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
+    s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
+    file_key = '{}/{}'.format(s3_prefix, file_path)
+    s3 = boto3.resource('s3')
+    object_str = s3.Object(s3_bucket, file_key).get()[
+        'Body'].read().decode('utf-8')
+    config_json = json.loads(object_str)
+    return config_json
+
+
 def init():
     # Check out environments
     for var in MANDATORY_ENV_VARS:
@@ -374,32 +363,13 @@ def init():
         else:
             MANDATORY_ENV_VARS[var]=os.environ.get(var)
 
-    if MANDATORY_ENV_VARS['RANK_MODEL'] == 'personalize':
-        # global personalize
-        # global personalize_runtime
-        # personalize = boto3.client('personalize', MANDATORY_ENV_VARS['AWS_REGION'])
-        # personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
-        global dataset_group_arn
-        response = personalize.list_dataset_groups()
-        for dataset_group in response["datasetGroups"]:
-            if dataset_group["name"] == MANDATORY_ENV_VARS['PERSONALIZE_DATASET_GROUP']:
-                logging.info("Dataset Group Arn:{}".format(dataset_group["datasetGroupArn"]))
-                dataset_group_arn = dataset_group["datasetGroupArn"]
-        global campaign_arn
-        solutions = personalize.list_solutions(
-            datasetGroupArn=dataset_group_arn
-        )
-        solution_arn = ''
-        for solution in solutions["solutions"]:
-            if solution['name'] == MANDATORY_ENV_VARS['PERSONALIZE_SOLUTION']:
-                solution_arn = solution["solutionArn"]
-        campaigns = personalize.list_campaigns(
-            solutionArn=solution_arn
-        )
-        for campaign in campaigns["campaigns"]:
-            if campaign["name"] == MANDATORY_ENV_VARS['PERSONALIZE_CAMPAIGN']:
-                logging.info("Campaign Arn:{}".format(campaign["campaignArn"]))
-                campaign_arn = campaign["campaignArn"]
+    global personalize_runtime
+    personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+
+    global ps_config
+    if MANDATORY_ENV_VARS['METHOD'] == 'ps-rank':
+        ps_file_path = "system/personalize-data/ps-config/config.json"
+        ps_config = load_config(ps_file_path)
 
 
 def serve(plugin_name):

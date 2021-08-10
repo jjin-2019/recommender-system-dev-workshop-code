@@ -17,8 +17,18 @@ if [[ -z $REGION ]];then
     REGION='ap-northeast-1'
 fi
 
+if [[ -z $SCENARIO ]];then
+    SCENARIO='News'
+fi
+
+if [[ -z $METHOD ]];then
+    METHOD='UserPersonalize'
+fi
+
 echo "Stage=$Stage"
 echo "REGION=$REGION"
+echo "SCENARIO=$SCENARIO"
+echo "METHOD=$METHOD"
 
 AWS_ACCOUNT_ID=$($AWS_CMD sts get-caller-identity  --o text | awk '{print $1}')
 
@@ -29,12 +39,8 @@ fi
 
 echo "AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID"
 
-# #delete dataset group
-# datasetGroupArn="arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:dataset-group/GCR-RS-News-UserPersonalize-Dataset-Group"
-# aws personalize delete-dataset-group --dataset-group-arn ${datasetGroupArn} > /dev/null 2>&1 || true
-
 #create dataset group
-datasetGroupArn=$(aws personalize create-dataset-group --name GCR-RS-News-Dataset-Group --output text)
+datasetGroupArn=$(aws personalize create-dataset-group --name GCR-RS-${SCENARIO}-Dataset-Group --output text)
 echo "dataset_Group_Arn: ${datasetGroupArn}"
 echo "......"
 
@@ -73,51 +79,39 @@ then
 fi
 
 
-# #for test
-# datasetGroupArn="arn:aws:personalize:ap-northeast-1:466154167985:dataset-group/GCR-RS-News-UserPersonalize-Dataset-Group"
-
-
-#delete exist schema
-echo "deleting Schema..."
-aws personalize delete-schema --schema-arn "arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:schema/NewsUserSchema" > /dev/null 2>&1 || true
-aws personalize delete-schema --schema-arn "arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:schema/NewsItemSchema" > /dev/null 2>&1 || true
-aws personalize delete-schema --schema-arn "arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:schema/NewsInteractionSchema" > /dev/null 2>&1 || true
-
-sleep 10
-
 #create schema
 echo "creating Schema..."
 user_schema_arn=$(aws personalize create-schema \
-	--name NewsUserSchema \
-	--schema file://../sample-data/system/personalize-data/schema/NewsUserSchema.json --output text)
+	--name ${SCENARIO}UserSchema \
+	--schema file://../sample-data/system/personalize-data/schema/${SCENARIO}UserSchema.json --output text)
 
 item_schema_arn=$(aws personalize create-schema \
-	--name NewsItemSchema \
-	--schema file://../sample-data/system/personalize-data/schema/NewsItemSchema.json --output text)
+	--name ${SCENARIO}ItemSchema \
+	--schema file://../sample-data/system/personalize-data/schema/${SCENARIO}ItemSchema.json --output text)
 
 interaction_schema_arn=$(aws personalize create-schema \
-	--name NewsInteractionSchema \
-	--schema file://../sample-data/system/personalize-data/schema/NewsInteractionSchema.json --output text)
+	--name ${SCENARIO}InteractionSchema \
+	--schema file://../sample-data/system/personalize-data/schema/${SCENARIO}InteractionSchema.json --output text)
 
 echo "......"
-sleep 10
+sleep 30
 
 #create dataset
 echo "create dataset..."
 user_dataset_arn=$(aws personalize create-dataset \
-	--name NewsUserDataset \
+	--name ${SCENARIO}UserDataset \
 	--dataset-group-arn ${datasetGroupArn} \
 	--dataset-type Users \
 	--schema-arn ${user_schema_arn} --output text)
 
 item_dataset_arn=$(aws personalize create-dataset \
-	--name NewsItemDataset \
+	--name ${SCENARIO}ItemDataset \
 	--dataset-group-arn ${datasetGroupArn} \
 	--dataset-type Items \
 	--schema-arn ${item_schema_arn} --output text)
 	
 interaction_dataset_arn=$(aws personalize create-dataset \
-	--name NewsInteractionDataset \
+	--name ${SCENARIO}InteractionDataset \
 	--dataset-group-arn ${datasetGroupArn} \
 	--dataset-type Interactions \
 	--schema-arn ${interaction_schema_arn} --output text)
@@ -179,37 +173,34 @@ PERSONALIZE_ROLE_BUILD=arn:aws:iam::${AWS_ACCOUNT_ID}:role/gcr-rs-${Stage}-perso
 echo "PERSONALIZE_ROLE_BUILD=${PERSONALIZE_ROLE_BUILD}"
 echo "Check if your personalize role arn is equal to the PERSONALIZE_ROLE_BUILD. If not, please follow the previous step to create iam role for personalize!"
 
-# echo "\nWaiting for creating dataset finishing...\n"
-# sleep 60
+
 
 #create import job
 echo "create dataset import job..."
 user_dataset_import_job_arn=$(aws personalize create-dataset-import-job \
-  --job-name NewsUserUserPersonalizeImportJob \
+  --job-name ${SCENARIO}UserImportJob \
   --dataset-arn ${user_dataset_arn} \
-  --data-source dataLocation=s3://${BUCKET_BUILD}/sample-data-news/system/personalize-data/personalize_user.csv \
+  --data-source dataLocation=s3://${BUCKET_BUILD}/sample-data-news/system/personalize-data/data/personalize_user.csv \
   --role-arn ${PERSONALIZE_ROLE_BUILD} \
   --output text)
   
   
 item_dataset_import_job_arn=$(aws personalize create-dataset-import-job \
-  --job-name NewsUserPersonalizeItemImportJob \
+  --job-name ${SCENARIO}ItemImportJob \
   --dataset-arn ${item_dataset_arn} \
-  --data-source dataLocation=s3://${BUCKET_BUILD}/sample-data-news/system/personalize-data/personalize_item.csv \
+  --data-source dataLocation=s3://${BUCKET_BUILD}/sample-data-news/system/personalize-data/data/personalize_item.csv \
   --role-arn ${PERSONALIZE_ROLE_BUILD} \
   --output text)
   
 interaction_dataset_import_job_arn=$(aws personalize create-dataset-import-job \
-  --job-name NewsUserPersonalizeInteractionImportJob \
+  --job-name ${SCENARIO}InteractionImportJob \
   --dataset-arn ${interaction_dataset_arn} \
-  --data-source dataLocation=s3://${BUCKET_BUILD}/sample-data-news/system/personalize-data/personalize_interactions.csv \
+  --data-source dataLocation=s3://${BUCKET_BUILD}/sample-data-news/system/personalize-data/data/personalize_interactions.csv \
   --role-arn ${PERSONALIZE_ROLE_BUILD} \
   --output text)
  
 echo "......"
-# # #for test
-# # user_dataset_import_job_arn="arn:aws:personalize:ap-northeast-1:466154167985:dataset-import-job/NewsUserImportJob"
-# # item_dataset_import_job_arn="arn:aws:personalize:ap-northeast-1:466154167985:dataset-import-job/NewsItemImportJob"
+
 
 #monitor import job
 echo "Data Importing... It will takes no longer than 10 min..."
@@ -252,17 +243,42 @@ then
 fi
 
 
+##final code
+#solution_arn=""
+#if [[ $METHOD == "UserPersonalize" ]]; then
+#    solution_arn=$(aws personalize create-solution \
+#          --name ${METHOD}Solution \
+#          --dataset-group-arn ${datasetGroupArn} \
+#          --recipe-arn arn:aws:personalize:::recipe/aws-user-personalization --output text)
+#elif [[ $METHOD == "Ranking" ]]; then
+#    solution_arn=$(aws personalize create-solution \
+#          --name ${METHOD}Solution \
+#          --dataset-group-arn ${datasetGroupArn} \
+#          --recipe-arn arn:aws:personalize:::recipe/aws-personalized-ranking --output text)
+#elif [[ $METHOD == "Sims" ]]; then
+#    solution_arn=$(aws personalize create-solution \
+#          --name ${METHOD}Solution \
+#          --dataset-group-arn ${datasetGroupArn} \
+#          --recipe-arn arn:aws:personalize:::recipe/aws-sims --output text)
+#fi
+#
+
+#For Dev
 #create solution
 userPersonalize_solution_arn=$(aws personalize create-solution \
-        --name userPersonalizeSolution \
+        --name UserPersonalizeSolution \
         --dataset-group-arn ${datasetGroupArn} \
         --recipe-arn arn:aws:personalize:::recipe/aws-user-personalization --output text)
 
 ranking_solution_arn=$(aws personalize create-solution \
-        --name rankingSolution \
+        --name RankingSolution \
         --dataset-group-arn ${datasetGroupArn} \
         --recipe-arn arn:aws:personalize:::recipe/aws-personalized-ranking --output text)
 
+sims_solution_arn=$(aws personalize create-solution \
+        --name SimsSolution \
+        --dataset-group-arn ${datasetGroupArn} \
+        --recipe-arn arn:aws:personalize:::recipe/aws-sims --output text)
 
 
 #monitor solution
@@ -275,18 +291,20 @@ do
         --solution-arn ${userPersonalize_solution_arn} | jq '.solution.status' -r)
     ranking_solution_status=$(aws personalize describe-solution \
         --solution-arn ${ranking_solution_arn} | jq '.solution.status' -r)
-    
+    sims_solution_status=$(aws personalize describe-solution \
+        --solution-arn ${sims_solution_arn} | jq '.solution.status' -r)
     
     echo "userPersonalize_solution_status: ${userPersonalize_solution_status}"
     echo "ranking_solution_status: ${ranking_solution_status}"
+    echo "sims_solution_status: ${sims_solution_status}"
 
     
-    if [[ "$userPersonalize_solution_status" = "CREATE FAILED" || "$ranking_solution_status" = "CREATE FAILED" ]]
+    if [[ "$userPersonalize_solution_status" = "CREATE FAILED" || "$ranking_solution_status" = "CREATE FAILED" || "$sims_solution_status" = "CREATE FAILED" ]]
     then
         echo "!!!Solution Create Failed!!!"
         echo "!!!Personalize Service Create Failed!!!"
         exit 8
-    elif [[ "$userPersonalize_solution_status" = "ACTIVE" && "$ranking_solution_status" = "ACTIVE" ]]
+    elif [[ "$userPersonalize_solution_status" = "ACTIVE" && "$ranking_solution_status" = "ACTIVE" && "$sims_solution_status" = "ACTIVE" ]]
     then
         echo "Solution  create successfully!"
         break;

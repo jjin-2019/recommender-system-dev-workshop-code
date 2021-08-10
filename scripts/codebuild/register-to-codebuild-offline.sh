@@ -12,8 +12,13 @@ if [[ -z $DELETE_FLAG ]];then
   DELETE_FLAG='no'
 fi
 
+METHOD=$3
+if [[ -z $METHOD ]]; then
+  METHOD='customer'
+fi
 
 echo "Stage:$Stage"
+echo "Method:$Method"
 
 AWS_CMD="aws"
 if [[ -n $PROFILE ]]; then
@@ -122,6 +127,7 @@ create_codebuild_project () {
 
 echo "----------------projects-------------------------"
 
+<<<<<<< HEAD
 projects_dir=(
   "lambda"
   "news/item-preprocessing"
@@ -143,6 +149,28 @@ projects_dir=(
   "news/personalize-step-funcs"
 )
 
+=======
+if [[ $METHOD == 'customer' ]]; then
+  projects_dir=(
+    "lambda"
+    "news/item-preprocessing"
+    "news/add-item-batch"
+    "news/item-feature-update-batch"
+    "news/model-update-embedding"
+    "news/prepare-training-data"
+    "news/model-update-action"
+    "news/dashboard"
+    "news/action-preprocessing"
+    "news/user-preprocessing"
+    "news/add-user-batch"
+    "news/portrait-batch"
+    "news/recall-batch"
+    "news/rank-batch"
+    "news/filter-batch"
+    "news/inverted-list"
+    "news/step-funcs"
+  )
+>>>>>>> d65e00a0c2841935bd1f83abf9eda5e03e5a6d46
 for project in ${projects_dir[@]}; do
   build_name=$(echo ${project} | sed 's#/#-#g')
   build_proj_name="rs-$Stage-offline-${build_name}-build"

@@ -47,6 +47,8 @@ spec:
             value: $(S3_BUCKET)
           - name: S3_PREFIX
             value: $(S3_PREFIX)
+          - name: METHOD
+            value: $(METHOD)
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:

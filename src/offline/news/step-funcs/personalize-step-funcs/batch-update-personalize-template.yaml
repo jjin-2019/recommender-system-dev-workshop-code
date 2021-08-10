@@ -15,24 +15,36 @@ Parameters:
     Type: String
     Default: LambdaAndStepFuncsRole
 
+  SagemakerRoleName:
+    Type: String
+    Default: SMRole
+
+  S3UtilLabmda:
+    Type: String
+    Default: S3UtilLabmda
+
   PreCheckLabmda:
     Type: String
     Default: PreCheckLabmda
 
-  CreateDatasetImportJobLambda:
+  SNSMessageLambda:
     Type: String
-    Default: CreateDatasetImportJobLambda
+    Default: SNSMessageLambda
 
-  CheckDatasetImportJobStatusLambda:
+  CreateBatchInferenceJobLambda:
     Type: String
-    Default: CheckDatasetImportJobStatusLambda
+    Default: CreateBatchInferenceJobLambda
+
+  CheckBatchInferenceJobStatusLambda:
+    Type: String
+    Default: CheckBatchInferenceJobStatusLambda
 
 Resources:
-  UserNewStepFuncPersonalize:
+  BatchUpdateStepFuncPersonalize:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/rs-${Stage}-${StepFuncAndLambdaRoleName}-${AWS::Region}"
-      StateMachineName: !Sub rs-${Stage}-News-UserNewStepFunc-Personalize
+      StateMachineName: !Sub rs-${Stage}-News-BatchUpdateStepFunc-Personalize
       DefinitionString: !Sub |
         {
           "StartAt": "Pre check",
@@ -47,7 +59,7 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "file_list": [
-                    "system/personalize-data/data/personalize_user.csv"
+                    "system/personalize-data/batch-input/personalize_item.csv"
                   ]
                 }
               },
@@ -55,69 +67,68 @@ Resources:
                 "Payload.$": "$.Payload"
               },
               "ResultPath": "$.Precheck",
-              "Next": "Create User Dataset Import Job"
+              "Next": "Create Batch Inference Job"
             },
-            "Create User Dataset Import Job": {
+            "Create Batch Inference Job": {
               "Type": "Task",
               "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
-                "FunctionName": "rs-${Stage}-${CreateDatasetImportJobLambda}",
+                "FunctionName": "rs-${Stage}-${CreateBatchInferenceJobLambda}",
                 "Payload": {
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
-                  "ps_config.$": "$.ps_config",
-                  "datasetType": "USER"
+                  "ps_config.$": "$.ps_config"
                 }
               },
               "ResultSelector": {
                 "Payload.$": "$.Payload"
               },
-              "ResultPath": "$.CreateUserDatasetImportJob",
-              "Next": "Wait 5 Minutes For Dataset Import Job"
+              "ResultPath": "$.CreateBatchInferenceJob",
+              "Next": "Wait 5 Minutes For Batch Inference Job"
             },
-            "Wait 5 Minutes For Dataset Import Job": {
+            "Wait 5 Minutes For Batch Inference Job": {
               "Type": "Wait",
               "Seconds": 300,
-              "Next": "Check User Dataset Import Job Status"
+              "Next": "Check Batch Inference Job Status"
             },
-            "Check User Dataset Import Job Status": {
+            "Check Batch Inference Job Status": {
               "Type": "Task",
               "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
               "Parameters": {
-                "FunctionName": "rs-${Stage}-${CheckDatasetImportJobStatusLambda}",
+                "FunctionName": "rs-${Stage}-${CheckBatchInferenceJobStatusLambda}",
                 "Payload": {
-                  "createDatasetImportJob.$": "$.CreateUserDatasetImportJob"
+                  "createBatchInferenceJob.$": "$.CreateBatchInferenceJob"
                 }
               },
               "ResultSelector": {
                 "Payload.$": "$.Payload"
               },
-              "ResultPath": "$.CheckUserDatsetImportJobStatus",
-              "Next": "User Dataset Import Job Status Choice"
+              "ResultPath": "$.CheckBatchInferenceJobStatus",
+              "Next": "Batch Inference Job Status Choice"
             },
-            "User Dataset Import Job Status Choice": {
+            "Batch Inference Job Status Choice": {
               "Type": "Choice",
               "Choices": [
                 {
                   "Or": [
                     {
-                      "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
+                      "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
                       "StringEquals": "CREATE PENDING"
                     },
                     {
-                      "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
+                      "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
                       "StringEquals": "CREATE IN_PROGRESS"
                     }
                   ],
-                  "Next": "Wait 5 Minutes For Dataset Import Job"
+                  "Next": "Wait 5 Minutes For Batch Inference Job"
                 },
                 {
-                  "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
+                  "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
                   "StringEquals": "ACTIVE",
                   "Next": "Succeed"
                 },
                 {
-                  "Variable": "$.CheckUserDatsetImportJobStatus.Payload.dataset_import_job_status",
+                  "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
                   "StringEquals": "CREATE FAILED",
                   "Next": "Fail"
                 }
@@ -126,7 +137,7 @@ Resources:
             },
             "Fail": {
               "Type": "Fail",
-              "Error": "Dataset Import Job Failed"
+              "Error": "Batch Inference Job Failed"
             },
             "Succeed": {
               "Type": "Succeed"
