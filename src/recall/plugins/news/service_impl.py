@@ -44,6 +44,7 @@ class ServiceImpl:
         self.entity_index = entity_index_l
         self.word_index = word_index_l
         self.entity_embedding = entity_embedding_l
+        self.personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
 
 
     def analyze_shot_record(self, record, id):
@@ -148,7 +149,7 @@ class ServiceImpl:
         ps_method = recall_wrap['config']['ps_mt']
         ps_config = recall_wrap['ps_config']
         for news_id in news_ids:
-            response = personalize_runtime.get_recommendations(
+            response = self.personalize_runtime.get_recommendations(
                 campaignArn=ps_config['CampaignArn'],
                 itemId=news_id,
                 numResults=topn_wrap[ps_method]
