@@ -56,7 +56,7 @@ images:
   newTag: news-be7a1759a0587aadda02a70a9b1be0122efb3842
 - name: rs/retrieve
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/retrieve
-  newTag: e4d14ace56d85851b7b2fffded162214fdf48583
+  newTag: d056ecd718733eee82e888ce79c2124e8fb7dc9f
 - name: rs/ui
   newName: public.ecr.aws/t8u1z3c8/rs/ui
   newTag: latest
