@@ -396,7 +396,7 @@ def load_config(file_path):
             'Body'].read().decode('utf-8')
     except Exception as ex:
         logging.info("get {} failed, error:{}".format(file_key, ex))
-        object_str = ""
+        object_str = "{}"
     config_json = json.loads(object_str)
     return config_json
 

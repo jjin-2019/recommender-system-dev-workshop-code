@@ -136,12 +136,8 @@ def ping():
 def retrieve_get_v2(user_id: str, curPage: int = 0, pageSize: int = 20, regionId=Header("0"),
                     recommendType: str = 'recommend'):
     logging.info("retrieve_get_v2() enter")
-    if recommendType == "recommend":
-        if MANDATORY_ENV_VARS['METHOD'] == "ps-rank":
-            item_list = get_recommend_from_personalize(user_id)
-        else:
-            item_list = get_recommend_from_default(user_id, recommendType)
-    #TODO
+    if recommendType == "recommend" and MANDATORY_ENV_VARS['METHOD'] == "ps-complete":
+        item_list = get_recommend_from_personalize(user_id)
     else:
         item_list = get_recommend_from_default(user_id, recommendType)
 
@@ -305,7 +301,7 @@ def load_config(file_path):
             'Body'].read().decode('utf-8')
     except Exception as ex:
         logging.info("get {} failed, error:{}".format(file_key, ex))
-        object_str = ""
+        object_str = "{}"
     config_json = json.loads(object_str)
     return config_json
 
