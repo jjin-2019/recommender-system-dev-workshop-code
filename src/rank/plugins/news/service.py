@@ -286,7 +286,7 @@ class Rank(service_pb2_grpc.RankServicer):
         response = self.personalize_runtime.get_personalized_ranking(
             campaignArn=self.ps_config['CampaignArn'],
             inputList=item_list,
-            userId=user_id
+            userId="b1b709bc-8dcc-4666-a444-9acc8e26fe9e"
         )
         rank_list = response['personalizedRanking']
         rank_result = {}
