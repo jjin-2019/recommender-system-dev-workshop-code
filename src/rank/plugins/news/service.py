@@ -34,6 +34,7 @@ MANDATORY_ENV_VARS = {
     'AWS_REGION': 'ap-northeast-1',
     'S3_BUCKET': 'aws-gcr-rs-sol-dev-workshop-ap-northeast-1-466154167985',
     'S3_PREFIX': 'sample-data',
+    'METHOD': 'customer',
 
     # numpy file
     'ENTITY_EMBEDDING_NPY': 'dkn_entity_embedding.npy',
@@ -42,7 +43,9 @@ MANDATORY_ENV_VARS = {
 
     # model file
     'MODEL_FILE': 'model.tar.gz',
-    'METHOD': 'customer'
+
+    # ps file
+    'PS_CONFIG': 'ps_config.json'
 }
 
 
@@ -54,9 +57,8 @@ fill_array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 action_model_type = 'action-model'
 embedding_type = 'embedding'
 pickle_type = 'inverted-list'
+json_type = 'ps-result'
 
-rank_config = {}
-ps_config = {}
 personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
 
 
@@ -77,8 +79,11 @@ class Rank(service_pb2_grpc.RankServicer):
         embedding_npy_file_list = [MANDATORY_ENV_VARS['ENTITY_EMBEDDING_NPY'], MANDATORY_ENV_VARS['CONTEXT_EMBEDDING_NPY'], MANDATORY_ENV_VARS['WORD_EMBEDDING_NPY']]
         self.reload_embedding_files(local_data_folder, embedding_npy_file_list)
 
+        json_file_list = [MANDATORY_ENV_VARS['PS_CONFIG']]
+        self.reload_json_type(local_data_folder, json_file_list)
+
     def reload_action_model(self, file_path, file_list):
-        logging.info('reload_embedding_files  strat')
+        logging.info('reload_embedding_files start')
         for file_name in file_list:
             model_path = file_path + file_name
             if os.path.isfile(model_path):
@@ -88,7 +93,7 @@ class Rank(service_pb2_grpc.RankServicer):
                 logging.info('model file is empty')     
 
     def reload_pickle_type(self, file_path, file_list):
-        logging.info('reload_pickle_type  strat')
+        logging.info('reload_pickle_type start')
         for file_name in file_list:
             pickle_path = file_path + file_name
             logging.info('reload_pickle_type pickle_path {}'.format(pickle_path))
@@ -97,10 +102,23 @@ class Rank(service_pb2_grpc.RankServicer):
                     logging.info('reload news_id_news_feature_dict file {}'.format(pickle_path))
                     self.news_id_news_feature_dict = self.load_pickle(pickle_path)
                 else:
-                    logging.info('reload news_id_news_feature_dict_dict, file is empty')                   
+                    logging.info('reload news_id_news_feature_dict_dict, file is empty')
+
+    def reload_json_type(self, file_path, file_list):
+        logging.info('reload_json_type start')
+        for file_name in file_list:
+            json_path = file_path + file_name
+            logging.info('reload_json_type json_path {}'.format(json_path))
+            if MANDATORY_ENV_VARS['PS_CONFIG'] in json_path:
+                if os.path.isfile(json_path):
+                    logging.info('reload ps_config file {}'.format(json_path))
+                    self.ps_config = self.load_json(json_path)
+                else:
+                    logging.info('reload ps_config failed, file is empty')
+
 
     def reload_embedding_files(self, file_path, file_list):
-        logging.info('reload_embedding_files  strat')
+        logging.info('reload_embedding_files start')
         for file_name in file_list:
             embedding_path = file_path + file_name
             logging.info('reload_embedding_files embedding_path {}'.format(embedding_path))
@@ -122,7 +140,7 @@ class Rank(service_pb2_grpc.RankServicer):
                     self.word_embed = np.load(embedding_path)
                     logging.info('word_embed size is {}'.format(np.shape(self.word_embed))) 
                 else:
-                    logging.info('word_embed is empty') 
+                    logging.info('word_embed is empty')
 
 
     def reload_model(self, model_path):
@@ -168,7 +186,16 @@ class Rank(service_pb2_grpc.RankServicer):
             infile.close()
             return dict
         else:
-            return {}        
+            return {}
+
+    def load_json(self, file):
+        if os.path.isfile(file):
+            infile = open(file, 'rb')
+            dict = json.load(infile)
+            infile.close()
+            return dict
+        else:
+            return {}
 
     def Reload(self, request, context):
         logging.info('Reload(self, request, context)...')
@@ -187,6 +214,8 @@ class Rank(service_pb2_grpc.RankServicer):
             self.reload_embedding_files(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
         elif file_type == pickle_type:
             self.reload_pickle_type(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
+        elif file_type == json_type:
+            self.reload_json_type(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
 
         logging.info('Re-initial rank service.')
         commonResponse = service_pb2.CommonResponse(code=0, description='Re-initialled with success')
@@ -253,7 +282,7 @@ class Rank(service_pb2_grpc.RankServicer):
         logging.info('generate_rank_result using personalize rank model start')
         item_list = [str(int(recall_item)) for recall_item in recall_result]
         response = personalize_runtime.get_personalized_ranking(
-            campaignArn=ps_config['CampaignArn'],
+            campaignArn=self.ps_config['CampaignArn'],
             inputList=item_list,
             userId=user_id
         )
@@ -344,17 +373,6 @@ class Rank(service_pb2_grpc.RankServicer):
         return rank_summary
 
 
-def load_config(file_path):
-    s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
-    s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
-    file_key = '{}/{}'.format(s3_prefix, file_path)
-    s3 = boto3.resource('s3')
-    object_str = s3.Object(s3_bucket, file_key).get()[
-        'Body'].read().decode('utf-8')
-    config_json = json.loads(object_str)
-    return config_json
-
-
 def init():
     # Check out environments
     for var in MANDATORY_ENV_VARS:
@@ -365,11 +383,6 @@ def init():
 
     global personalize_runtime
     personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
-
-    global ps_config
-    if MANDATORY_ENV_VARS['METHOD'] == 'ps-rank':
-        ps_file_path = "system/personalize-data/ps-config/config.json"
-        ps_config = load_config(ps_file_path)
 
 
 def serve(plugin_name):

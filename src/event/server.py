@@ -3,10 +3,13 @@ import logging
 import os
 import uuid
 from datetime import datetime
+from threading import Thread
 from typing import List, Dict, Any, Optional
 import time
 import boto3
+import redis
 import requests
+import cache
 import uvicorn as uvicorn
 from fastapi import FastAPI, Header, HTTPException, APIRouter, Depends
 from fastapi.exceptions import RequestValidationError
@@ -21,10 +24,13 @@ s3client = boto3.client('s3')
 
 step_funcs = None
 account_id = ''
+ps_config = {}
+ps_result = 'ps-result'
+sleep_interval = 10  # second
 
 MANDATORY_ENV_VARS = {
-    # 'REDIS_HOST': 'localhost',
-    # 'REDIS_PORT': 6379,
+    'REDIS_HOST': 'localhost',
+    'REDIS_PORT': 6379,
     'EVENT_PORT': '5100',
     'PORTRAIT_HOST': 'portrait',
     'PORTRAIT_PORT': '5300',
@@ -35,8 +41,17 @@ MANDATORY_ENV_VARS = {
     'S3_PREFIX': 'sample-data',
     'POD_NAMESPACE': 'default',
     'TEST': 'False',
-    'METHOD': 'ps-complete'
+    'METHOD': 'ps-complete',
+    'PS_CONFIG': 'ps_config.json'
 }
+
+
+def xasync(f):
+    def wrapper(*args, **kwargs):
+        thr = Thread(target=f, args=args, kwargs=kwargs)
+        thr.start()
+
+    return wrapper
 
 
 async def log_json(request: Request):
@@ -231,6 +246,12 @@ def online_inference(user_id: str, clickItemList: ClickedItemList):
     if MANDATORY_ENV_VARS['METHOD'] == "ps-complete":
         logging.info("send click info to personalize service ...")
         message = send_event_to_personalize(data)
+    elif MANDATORY_ENV_VARS['METHOD'] in ["ps-rank", "ps-sims"]:
+        logging.info("send click info to personalize service and default process ...")
+        ps_message = send_event_to_personalize(data)
+        default_message = send_event_to_default(data)
+        message = "send message to personalize result:{}; send message to default process result:{}" \
+            .format(ps_message, default_message)
     else:
         logging.info("send click info to default process ...")
         message = send_event_to_default(data)
@@ -329,8 +350,8 @@ def start_step_funcs(trainReq):
     logging.info("start_step_funcs: {}, trainReq={}".format(
         stateMachineArn, trainReq))
 
-    ps_file_path = "system/personalize-data/ps-config/config.json"
-    ps_config = load_config(ps_file_path)
+    # ps_file_path = "system/personalize-data/ps-config/ps_config.json"
+    # ps_config = load_config(ps_file_path)
     ps_config_str = json.dumps(ps_config)
 
     try:
@@ -370,10 +391,73 @@ def load_config(file_path):
     s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
     file_key = '{}/{}'.format(s3_prefix, file_path)
     s3 = boto3.resource('s3')
-    object_str = s3.Object(s3_bucket, file_key).get()[
-        'Body'].read().decode('utf-8')
+    try:
+        object_str = s3.Object(s3_bucket, file_key).get()[
+            'Body'].read().decode('utf-8')
+    except Exception as ex:
+        logging.info("get {} failed, error:{}".format(file_key, ex))
+        object_str = "{}"
     config_json = json.loads(object_str)
     return config_json
+
+
+@xasync
+def read_ps_config_message():
+    logging.info('read_ps_message start')
+    # Read existed stream message
+    stream_message = rCache.read_stream_message(ps_result)
+    if stream_message:
+        logging.info("Handle existed stream ps-result message")
+        handle_stream_message(stream_message)
+    while True:
+        logging.info('wait for reading ps-result message')
+        localtime = time.asctime(time.localtime(time.time()))
+        logging.info('start read stream: time: {}'.format(localtime))
+        try:
+            stream_message = rCache.read_stream_message_block(ps_result)
+            if stream_message:
+                handle_stream_message(stream_message)
+        except redis.ConnectionError:
+            localtime = time.asctime(time.localtime(time.time()))
+            logging.info('get ConnectionError, time: {}'.format(localtime))
+        time.sleep(sleep_interval)
+
+
+def handle_stream_message(stream_message):
+    logging.info('get stream message from {}'.format(stream_message))
+    file_type, file_path, file_list = parse_stream_message(stream_message)
+    logging.info('start reload data process in handle_stream_message')
+    logging.info('file_type {}'.format(file_type))
+    logging.info('file_path {}'.format(file_path))
+    logging.info('file_list {}'.format(file_list))
+
+    global ps_config
+    for file_name in file_list:
+        if MANDATORY_ENV_VARS['PS_CONFIG'] in file_name:
+            logging.info("reload config file: {}".format(file_name))
+            ps_config = load_config(file_name)
+
+
+def parse_stream_message(stream_message):
+    for stream_name, message in stream_message:
+        for message_id, value in message:
+            decode_value = convert(value)
+            file_type = decode_value['file_type']
+            file_path = decode_value['file_path']
+            file_list = decode_value['file_list']
+            return file_type, file_path, file_list
+
+
+# convert stream data to str
+def convert(data):
+    if isinstance(data, bytes):
+        return data.decode('ascii')
+    elif isinstance(data, dict):
+        return dict(map(convert, data.items()))
+    elif isinstance(data, tuple):
+        return map(convert, data)
+    else:
+        return data
 
 
 app.include_router(api_router, dependencies=[Depends(log_json)])
@@ -394,8 +478,12 @@ def init():
         account_id = boto3.client(
             'sts', aws_region).get_caller_identity()['Account']
 
+    global rCache
+    rCache = cache.RedisCache(host=MANDATORY_ENV_VARS['REDIS_HOST'], port=MANDATORY_ENV_VARS['REDIS_PORT'])
+    logging.info('redis status is {}'.format(rCache.connection_status()))
+
     global ps_config
-    ps_file_path = "system/personalize-data/ps-config/config.json"
+    ps_file_path = "system/personalize-data/ps-config/ps_config.json"
     ps_config = load_config(ps_file_path)
 
     global personalize_events
@@ -403,14 +491,10 @@ def init():
 
 
 def get_step_funcs_name():
-
-    event_config_file_path = "feature/config/event-config.json"
-    event_config = load_config(event_config_file_path)
-
-    stage = MANDATORY_ENV_VARS['Stage']
-    scenarios = MANDATORY_ENV_VARS['Scenarios']
-    inference = event_config['Inference']
-    step_funcs_name = "rs-{}-{}-OverallStepFunc-{}".format(stage, scenarios, inference)
+    if MANDATORY_ENV_VARS['MODEL'] == 'ps-complete':
+        step_funcs_name = "rs-dev-workshop-News-OverallStepFunc-Personalize"
+    else:
+        step_funcs_name = "rs-dev-workshop-News-OverallStepFunc"
     return step_funcs_name
 
     # namespace = MANDATORY_ENV_VARS['POD_NAMESPACE']

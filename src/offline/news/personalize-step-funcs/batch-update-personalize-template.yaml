@@ -125,7 +125,7 @@ Resources:
                 {
                   "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
                   "StringEquals": "ACTIVE",
-                  "Next": "Succeed"
+                  "Next": "Send notification"
                 },
                 {
                   "Variable": "$.CheckBatchInferenceJobStatus.Payload.batch_inference_job_status",
@@ -134,6 +134,22 @@ Resources:
                 }
               ],
               "Default": "Fail"
+            },
+            "Send notification": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::states:startExecution.sync:2",
+              "Parameters": {
+                "Input": {
+                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+                  "Bucket.$": "$.Bucket",
+                  "S3Prefix.$": "$.S3Prefix",
+                  "file_type": "ps-result"
+                },
+                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-NotificationStepFunc",
+                "Name.$": "States.Format('{}', $$.Execution.Name)"
+              },
+              "Next": "Succeed",
+              "ResultPath": "$.Notification"
             },
             "Fail": {
               "Type": "Fail",

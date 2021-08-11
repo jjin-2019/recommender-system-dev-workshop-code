@@ -26,16 +26,16 @@ images:
   newTag: 85c5612d40fca126e2b4e8c2fbd3ebb73ece1ce7
 - name: rs/event
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/event
-  newTag: 6ad2275d15760b62171294537f9977e977800b0a
+  newTag: 45e5430b3ac5e927c17657f12b1ada4f8a908c4b
 - name: rs/filter
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/filter
-  newTag: 9ab9ba34b87e24b5ee3c779735f55880cace0c0b
+  newTag: 7a1145bcddd0a213781aac145dc671f0c8837ed6
 - name: rs/filter-plugin
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/filter-plugin
-  newTag: news-9ab9ba34b87e24b5ee3c779735f55880cace0c0b
+  newTag: news-7a1145bcddd0a213781aac145dc671f0c8837ed6
 - name: rs/loader
-  newName: public.ecr.aws/t8u1z3c8/rs/loader
-  newTag: latest
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/loader
+  newTag: 2bca7458ffa9257dab435b57fd0c3f6f5b778c00
 - name: rs/portrait
   newName: public.ecr.aws/t8u1z3c8/rs/portrait
   newTag: latest
@@ -44,19 +44,19 @@ images:
   newTag: latest
 - name: rs/rank
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/rank
-  newTag: e1fbfb1d76f7c22c1f8e8c6a393e7fa5b5e24ce9
+  newTag: 9387f7416b65ddaed4ec051bf2b950c4168fd4a1
 - name: rs/rank-plugin
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/rank-plugin
-  newTag: news-e1fbfb1d76f7c22c1f8e8c6a393e7fa5b5e24ce9
+  newTag: news-9387f7416b65ddaed4ec051bf2b950c4168fd4a1
 - name: rs/recall
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall
-  newTag: 2d3de27c5b5c1984bd6cfaf68dfc455952ac1946
+  newTag: 21ccc228a902ba0e29a55ca6a534b25d8bfa00be
 - name: rs/recall-plugin
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall-plugin
-  newTag: news-2d3de27c5b5c1984bd6cfaf68dfc455952ac1946
+  newTag: news-21ccc228a902ba0e29a55ca6a534b25d8bfa00be
 - name: rs/retrieve
-  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/retrieve
-  newTag: e4d14ace56d85851b7b2fffded162214fdf48583
+  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/retrieve
+  newTag: 4f265597e91448fbcea2a6f2010e57c66791e066
 - name: rs/ui
   newName: public.ecr.aws/t8u1z3c8/rs/ui
   newTag: latest
