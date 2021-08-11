@@ -25,8 +25,8 @@ images:
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/demo
   newTag: 85c5612d40fca126e2b4e8c2fbd3ebb73ece1ce7
 - name: rs/event
-  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/event
-  newTag: b0a26ca545d79d44d0a7fa7e76469cdf8dc77001
+  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/event
+  newTag: 8adbe6facf7f1b00d194408e89cf87e1daefc830
 - name: rs/filter
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/filter
   newTag: 7a1145bcddd0a213781aac145dc671f0c8837ed6
