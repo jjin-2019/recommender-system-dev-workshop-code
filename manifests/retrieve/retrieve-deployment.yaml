@@ -37,5 +37,11 @@ spec:
             value: "filter"
           - name: FILTER_PORT
             value: "5200"
+          - name: AWS_REGION
+            value: $(AWS_REGION)
+          - name: S3_BUCKET
+            value: $(S3_BUCKET)
+          - name: S3_PREFIX
+            value: $(S3_PREFIX)
           - name: METHOD
             value: $(METHOD)

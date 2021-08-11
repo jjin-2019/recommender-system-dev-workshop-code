@@ -322,9 +322,8 @@ def init():
     personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
 
     global ps_config
-    if MANDATORY_ENV_VARS['METHOD'] == "ps-rank":
-        ps_file_path = "system/personalize-data/ps-config/ps_config.json"
-        ps_config = load_config(ps_file_path)
+    ps_file_path = "system/personalize-data/ps-config/ps_config.json"
+    ps_config = load_config(ps_file_path)
 
 
 if __name__ == "__main__":
