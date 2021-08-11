@@ -1,10 +1,14 @@
 import logging
 import math
 import os
+from threading import Thread
 from typing import List
 from urllib.request import Request
 import json
 import boto3
+import redis
+import cache
+import time
 import requests
 import uvicorn as uvicorn
 from fastapi import FastAPI, Header, HTTPException
@@ -17,10 +21,12 @@ app = FastAPI()
 
 personalize_runtime = boto3.client('personalize-runtime', 'ap-northeast-1')
 ps_config = {}
+ps_result = "ps-result"
+sleep_interval = 10 #second
 
 MANDATORY_ENV_VARS = {
-    # 'REDIS_HOST': 'localhost',
-    # 'REDIS_PORT': 6379,
+    'REDIS_HOST': 'localhost',
+    'REDIS_PORT': 6379,
     'RETRIEVE_HOST': 'retrieve',
     'RETRIEVE_PORT': '5600',
     'FILTER_HOST': 'filter',
@@ -38,6 +44,11 @@ class RSHTTPException(HTTPException):
     def __init__(self, status_code: int, message: str):
         super().__init__(status_code, message)
 
+def xasync(f):
+    def wrapper(*args, **kwargs):
+        thr = Thread(target = f, args = args, kwargs = kwargs)
+        thr.start()
+    return wrapper
 
 @app.exception_handler(HTTPException)
 async def rs_exception_handler(request: Request, rs_exec: HTTPException):
@@ -225,13 +236,76 @@ def get_recommend_from_personalize(user_id):
     return item_list
 
 
+@xasync
+def read_ps_config_message():
+    logging.info('read_ps_message start')
+    # Read existed stream message
+    stream_message = rCache.read_stream_message(ps_result)
+    if stream_message:
+        logging.info("Handle existed stream ps-result message")
+        handle_stream_message(stream_message)
+    while True:
+        logging.info('wait for reading ps-result message')
+        localtime = time.asctime( time.localtime(time.time()))
+        logging.info('start read stream: time: {}'.format(localtime))
+        try:
+            stream_message = rCache.read_stream_message_block(ps_result)
+            if stream_message:
+                handle_stream_message(stream_message)
+        except redis.ConnectionError:
+            localtime = time.asctime( time.localtime(time.time()))
+            logging.info('get ConnectionError, time: {}'.format(localtime))
+        time.sleep( sleep_interval )
+
+
+def handle_stream_message(stream_message):
+    logging.info('get stream message from {}'.format(stream_message))
+    file_type, file_path, file_list = parse_stream_message(stream_message)
+    logging.info('start reload data process in handle_stream_message')
+    logging.info('file_type {}'.format(file_type))
+    logging.info('file_path {}'.format(file_path))
+    logging.info('file_list {}'.format(file_list))
+
+    global ps_config
+    for file_name in file_list:
+        if MANDATORY_ENV_VARS['PS_CONFIG'] in file_name:
+            logging.info("reload config file: {}".format(file_name))
+            ps_config = load_config(file_name)
+
+
+def parse_stream_message(stream_message):
+    for stream_name, message in stream_message:
+        for message_id, value in message:
+            decode_value = convert(value)
+            file_type = decode_value['file_type']
+            file_path = decode_value['file_path']
+            file_list = decode_value['file_list']
+            return file_type, file_path, file_list
+
+
+# convert stream data to str
+def convert(data):
+    if isinstance(data, bytes):
+        return data.decode('ascii')
+    elif isinstance(data, dict):
+        return dict(map(convert, data.items()))
+    elif isinstance(data, tuple):
+        return map(convert, data)
+    else:
+        return data
+
+
 def load_config(file_path):
     s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
     s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
     file_key = '{}/{}'.format(s3_prefix, file_path)
     s3 = boto3.resource('s3')
-    object_str = s3.Object(s3_bucket, file_key).get()[
-        'Body'].read().decode('utf-8')
+    try:
+        object_str = s3.Object(s3_bucket, file_key).get()[
+            'Body'].read().decode('utf-8')
+    except Exception as ex:
+        logging.info("get {} failed, error:{}".format(file_key, ex))
+        object_str = ""
     config_json = json.loads(object_str)
     return config_json
 
@@ -244,12 +318,16 @@ def init():
         else:
             MANDATORY_ENV_VARS[var] = str(os.environ.get(var))
 
+    global rCache
+    rCache = cache.RedisCache(host=MANDATORY_ENV_VARS['REDIS_HOST'], port=MANDATORY_ENV_VARS['REDIS_PORT'])
+    logging.info('redis status is {}'.format(rCache.connection_status()))
+
     global personalize_runtime
     personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
 
     global ps_config
     if MANDATORY_ENV_VARS['METHOD'] == "ps-rank":
-        ps_file_path = "system/personalize-data/ps-config/config.json"
+        ps_file_path = "system/personalize-data/ps-config/ps_config.json"
         ps_config = load_config(ps_file_path)
 
 
