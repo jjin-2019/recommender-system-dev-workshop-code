@@ -32,6 +32,7 @@ sleep_interval = 10 #second
 action_model_type = 'action-model'
 embedding_type = 'embedding'
 pickle_type = 'inverted-list'
+json_type = 'ps-result'
 
 
 def xasync(f):
@@ -124,6 +125,7 @@ def read_stream_messages():
     read_action_model_message()
     read_embedding_message()
     read_pickle_message()
+    read_json_message()
 
 @xasync
 def read_action_model_message():
@@ -180,7 +182,28 @@ def read_pickle_message():
         except redis.ConnectionError:
             localtime = time.asctime( time.localtime(time.time()))
             logging.info('get ConnectionError, time: {}'.format(localtime))                 
-        time.sleep( sleep_interval )                
+        time.sleep( sleep_interval )
+
+
+@xasync
+def read_json_message():
+    logging.info('read_json_message start')
+    # Read existed stream message
+    stream_message = rCache.read_strem_message(json_type)
+    if stream_message:
+        logging.info("Handle existed stream json_type message")
+        handle_stream_message(stream_message)
+    while True:
+        logging.info('wait for reading json_type message')
+        try:
+            stream_message = rCache.read_stream_message_block(json_type)
+            if stream_message:
+                handle_stream_message(stream_message)
+        except redis.ConnectionError:
+            localtime = time.asctime( time.localtime(time.time()))
+            logging.info('get ConnectionError, time: {}'.format(localtime))
+        time.sleep( sleep_interval )
+
 
 def handle_stream_message(stream_message):
     logging.info('get stream message from {}'.format(stream_message))
