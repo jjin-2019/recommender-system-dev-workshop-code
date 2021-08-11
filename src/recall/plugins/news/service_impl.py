@@ -146,6 +146,7 @@ class ServiceImpl:
         topn_wrap = recall_wrap['config']['mt_topn']
         weights = recall_wrap['config']['pos_weights']
         ps_method = recall_wrap['config']['ps_mt']
+        ps_config = recall_wrap['ps_config']
         for news_id in news_ids:
             response = personalize_runtime.get_recommendations(
                 campaignArn=ps_config['CampaignArn'],
@@ -229,17 +230,6 @@ class ServiceImpl:
         return recall_result
 
 
-def load_config(file_path):
-    s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
-    s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
-    file_key = '{}/{}'.format(s3_prefix, file_path)
-    s3 = boto3.resource('s3')
-    object_str = s3.Object(s3_bucket, file_key).get()[
-        'Body'].read().decode('utf-8')
-    config_json = json.loads(object_str)
-    return config_json
-
-
 def init():
     # Check out environments
     for var in MANDATORY_ENV_VARS:
@@ -250,6 +240,4 @@ def init():
 
     global personalize_runtime
     personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
-    global ps_config
-    ps_file_path = "system/personalize-data/ps-config/config.json"
-    ps_config = load_config(ps_file_path)
+

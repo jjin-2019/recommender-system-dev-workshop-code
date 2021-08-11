@@ -48,12 +48,14 @@ MANDATORY_ENV_VARS = {
     'REDIS_HOST': 'localhost',
     'REDIS_PORT': 6379,
 
-    'PORTRAIT_SERVICE_ENDPOINT': 'http://portrait:5300'
+    'PORTRAIT_SERVICE_ENDPOINT': 'http://portrait:5300',
+    'PS_CONFIG': 'ps_config.json'
 }
 
 embedding_type = 'embedding'
 pickle_type = 'inverted-list'
 vector_index_type = 'vector-index'
+json_type = 'ps-result'
 
 # lastUpdate
 localtime = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
@@ -99,6 +101,9 @@ class Recall(service_pb2_grpc.RecallServicer):
         pickle_file_list.append(MANDATORY_ENV_VARS['WORD_ID_NEWS_IDS'])
         pickle_file_list.append(MANDATORY_ENV_VARS['NEWS_ID_PROPERTY'])
         self.reload_pickle_file(local_data_folder, pickle_file_list)
+
+        json_file_list = [MANDATORY_ENV_VARS['PS_CONFIG']]
+        self.reload_json_file(local_data_folder, json_file_list)
 
     def reload_vector_index(self, file_path, file_list):
         logging.info('reload_vector_index file strat')
@@ -151,12 +156,31 @@ class Recall(service_pb2_grpc.RecallServicer):
                     logging.info('reload entity_embed')
                     self.entity_embedding = np.load(embedding_path)
                 else:
-                    logging.info('entity_embed is empty') 
+                    logging.info('entity_embed is empty')
+
+    def reload_json_file(self, file_path, file_list):
+        logging.info('reload_json_file start')
+        for file_name in file_list:
+            json_path = file_path + file_name
+            logging.info('reload_json_type json_path {}'.format(json_path))
+            if MANDATORY_ENV_VARS['PS_CONFIG'] in json_path:
+                logging.info('reload ps_config file {}'.format(json_path))
+                self.ps_config = self.load_json(json_path)
 
     def load_pickle(self, file):
         if os.path.isfile(file):
             infile = open(file, 'rb')
             dict = pickle.load(infile)
+            infile.close()
+            return dict
+        else:
+            logging.info('file {} is not existed'.format(file))
+            return {}
+
+    def load_json(self, file):
+        if os.path.isfile(file):
+            infile = open(file, 'rb')
+            dict = json.load(infile)
             infile.close()
             return dict
         else:
@@ -199,6 +223,8 @@ class Recall(service_pb2_grpc.RecallServicer):
             self.reload_pickle_file(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
         elif file_type == vector_index_type:
             self.reload_vector_index(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
+        elif file_type == json_type:
+            self.reload_json_file(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
 
         logging.info('Re-initial recall service.')
         commonResponse = service_pb2.CommonResponse(code=0, description='Re-initialled with success')
@@ -265,6 +291,7 @@ class Recall(service_pb2_grpc.RecallServicer):
         recall_wrap['dict_wrap']['words'] = self.word_id_news_ids_dict
         recall_wrap['dict_wrap']['keywords'] = self.keywords_news_ids_dict
         recall_wrap['config'] = self.recall_config
+        recall_wrap['ps_config'] = self.ps_config
         config_dict['recall_wrap'] = recall_wrap
         config_dict['user_portrait'] = user_portrait_result
         # user_click_records[reviewerID] = pos_list
