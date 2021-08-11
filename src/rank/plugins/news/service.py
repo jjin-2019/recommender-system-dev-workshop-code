@@ -34,6 +34,7 @@ MANDATORY_ENV_VARS = {
     'AWS_REGION': 'ap-northeast-1',
     'S3_BUCKET': 'aws-gcr-rs-sol-dev-workshop-ap-northeast-1-466154167985',
     'S3_PREFIX': 'sample-data',
+    'METHOD': 'customer',
 
     # numpy file
     'ENTITY_EMBEDDING_NPY': 'dkn_entity_embedding.npy',
@@ -42,7 +43,9 @@ MANDATORY_ENV_VARS = {
 
     # model file
     'MODEL_FILE': 'model.tar.gz',
-    'METHOD': 'customer'
+
+    # ps file
+    'PS_CONFIG': 'ps_config.json'
 }
 
 
@@ -54,6 +57,7 @@ fill_array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 action_model_type = 'action-model'
 embedding_type = 'embedding'
 pickle_type = 'inverted-list'
+json_type = 'ps-result'
 
 rank_config = {}
 ps_config = {}
@@ -78,7 +82,7 @@ class Rank(service_pb2_grpc.RankServicer):
         self.reload_embedding_files(local_data_folder, embedding_npy_file_list)
 
     def reload_action_model(self, file_path, file_list):
-        logging.info('reload_embedding_files  strat')
+        logging.info('reload_embedding_files start')
         for file_name in file_list:
             model_path = file_path + file_name
             if os.path.isfile(model_path):
@@ -88,7 +92,7 @@ class Rank(service_pb2_grpc.RankServicer):
                 logging.info('model file is empty')     
 
     def reload_pickle_type(self, file_path, file_list):
-        logging.info('reload_pickle_type  strat')
+        logging.info('reload_pickle_type start')
         for file_name in file_list:
             pickle_path = file_path + file_name
             logging.info('reload_pickle_type pickle_path {}'.format(pickle_path))
@@ -97,10 +101,23 @@ class Rank(service_pb2_grpc.RankServicer):
                     logging.info('reload news_id_news_feature_dict file {}'.format(pickle_path))
                     self.news_id_news_feature_dict = self.load_pickle(pickle_path)
                 else:
-                    logging.info('reload news_id_news_feature_dict_dict, file is empty')                   
+                    logging.info('reload news_id_news_feature_dict_dict, file is empty')
+
+    def reload_json_type(self, file_path, file_list):
+        logging.info('reload_json_type start')
+        for file_name in file_list:
+            json_path = file_path + file_name
+            logging.info('reload_json_type json_path {}'.format(json_path))
+            if MANDATORY_ENV_VARS['PS_CONFIG'] in json_path:
+                if os.path.isfile(json_path):
+                    logging.info('reload ps_config file {}'.format(json_path))
+                    self.ps_config = self.load_json(json_path)
+                else:
+                    logging.info('reload ps_config failed, file is empty')
+
 
     def reload_embedding_files(self, file_path, file_list):
-        logging.info('reload_embedding_files  strat')
+        logging.info('reload_embedding_files start')
         for file_name in file_list:
             embedding_path = file_path + file_name
             logging.info('reload_embedding_files embedding_path {}'.format(embedding_path))
@@ -122,7 +139,7 @@ class Rank(service_pb2_grpc.RankServicer):
                     self.word_embed = np.load(embedding_path)
                     logging.info('word_embed size is {}'.format(np.shape(self.word_embed))) 
                 else:
-                    logging.info('word_embed is empty') 
+                    logging.info('word_embed is empty')
 
 
     def reload_model(self, model_path):
@@ -187,6 +204,8 @@ class Rank(service_pb2_grpc.RankServicer):
             self.reload_embedding_files(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
         elif file_type == pickle_type:
             self.reload_pickle_type(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
+        elif file_type == json_type:
+            self.reload_json_type(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
 
         logging.info('Re-initial rank service.')
         commonResponse = service_pb2.CommonResponse(code=0, description='Re-initialled with success')

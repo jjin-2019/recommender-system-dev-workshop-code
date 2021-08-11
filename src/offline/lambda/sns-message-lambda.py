@@ -126,6 +126,8 @@ def do_handler(event, context):
             if message_type == 'movie':
                 msg_file_types.extend(
                     ["embeddings", "inverted-list", "vector-index"])
+        elif file_type == "ps-result":
+            msg_file_types.extend(["ps-result"])
         else:
             msg_file_types.append(file_type)
 
@@ -275,6 +277,13 @@ def get_message_dict(bucket_and_prefix, message_type):
         "movie_records": [
             "{}/system/item-data/item.csv".format(
                 bucket_and_prefix),
+        ],
+
+        "ps-result": [
+            "{}/system/personalize-data/ps-config/config.json".format(
+                bucket_and_prefix),
+            "{}/feature/recommend-list/personalize/ps-complete".format(
+                bucket_and_prefix)
         ]
 
     }
@@ -341,6 +350,13 @@ def get_message_dict(bucket_and_prefix, message_type):
         "news_records": [
             "{}/system/item-data/item.csv".format(
                 bucket_and_prefix),
+        ],
+
+        "ps-result": [
+            "{}/system/personalize-data/ps-config/config.json".format(
+                bucket_and_prefix),
+            "{}/feature/recommend-list/personalize/ps-complete".format(
+                bucket_and_prefix)
         ]
     }
 
