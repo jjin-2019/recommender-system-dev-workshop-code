@@ -26,7 +26,7 @@ step_funcs = None
 account_id = ''
 ps_config = {}
 ps_result = 'ps-result'
-sleep_interval = 10 #second
+sleep_interval = 10  # second
 
 MANDATORY_ENV_VARS = {
     'REDIS_HOST': 'localhost',
@@ -45,10 +45,12 @@ MANDATORY_ENV_VARS = {
     'PS_CONFIG': 'ps_config.json'
 }
 
+
 def xasync(f):
     def wrapper(*args, **kwargs):
-        thr = Thread(target = f, args = args, kwargs = kwargs)
+        thr = Thread(target=f, args=args, kwargs=kwargs)
         thr.start()
+
     return wrapper
 
 
@@ -244,6 +246,12 @@ def online_inference(user_id: str, clickItemList: ClickedItemList):
     if MANDATORY_ENV_VARS['METHOD'] == "ps-complete":
         logging.info("send click info to personalize service ...")
         message = send_event_to_personalize(data)
+    elif MANDATORY_ENV_VARS['METHOD'] in ["ps-rank", "ps-sims"]:
+        logging.info("send click info to personalize service and default process ...")
+        ps_message = send_event_to_personalize(data)
+        default_message = send_event_to_default(data)
+        message = "send message to personalize result:{}; send message to default process result:{}" \
+            .format(ps_message, default_message)
     else:
         logging.info("send click info to default process ...")
         message = send_event_to_default(data)
@@ -403,16 +411,16 @@ def read_ps_config_message():
         handle_stream_message(stream_message)
     while True:
         logging.info('wait for reading ps-result message')
-        localtime = time.asctime( time.localtime(time.time()))
+        localtime = time.asctime(time.localtime(time.time()))
         logging.info('start read stream: time: {}'.format(localtime))
         try:
             stream_message = rCache.read_stream_message_block(ps_result)
             if stream_message:
                 handle_stream_message(stream_message)
         except redis.ConnectionError:
-            localtime = time.asctime( time.localtime(time.time()))
+            localtime = time.asctime(time.localtime(time.time()))
             logging.info('get ConnectionError, time: {}'.format(localtime))
-        time.sleep( sleep_interval )
+        time.sleep(sleep_interval)
 
 
 def handle_stream_message(stream_message):
@@ -483,7 +491,6 @@ def init():
 
 
 def get_step_funcs_name():
-
     if MANDATORY_ENV_VARS['MODEL'] == 'ps-complete':
         step_funcs_name = "rs-dev-workshop-News-OverallStepFunc-Personalize"
     else:

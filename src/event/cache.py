@@ -6,8 +6,6 @@ import pickle
 
 class RedisCache:
 
-    ps_config_file = 'ps_config_file'
-
     def __init__(self, host='localhost', port=6379, db=0):
         logging.info('Initial RedisCache ...')
         # Initial connection to Redis
