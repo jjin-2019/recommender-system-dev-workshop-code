@@ -41,7 +41,8 @@ MANDATORY_ENV_VARS = {
     'S3_PREFIX': 'sample-data',
     'POD_NAMESPACE': 'default',
     'TEST': 'False',
-    'METHOD': 'ps-complete'
+    'METHOD': 'ps-complete',
+    'PS_CONFIG': 'ps_config.json'
 }
 
 def xasync(f):
@@ -341,8 +342,8 @@ def start_step_funcs(trainReq):
     logging.info("start_step_funcs: {}, trainReq={}".format(
         stateMachineArn, trainReq))
 
-    ps_file_path = "system/personalize-data/ps-config/config.json"
-    ps_config = load_config(ps_file_path)
+    # ps_file_path = "system/personalize-data/ps-config/ps_config.json"
+    # ps_config = load_config(ps_file_path)
     ps_config_str = json.dumps(ps_config)
 
     try:
@@ -382,8 +383,12 @@ def load_config(file_path):
     s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
     file_key = '{}/{}'.format(s3_prefix, file_path)
     s3 = boto3.resource('s3')
-    object_str = s3.Object(s3_bucket, file_key).get()[
-        'Body'].read().decode('utf-8')
+    try:
+        object_str = s3.Object(s3_bucket, file_key).get()[
+            'Body'].read().decode('utf-8')
+    except Exception as ex:
+        logging.info("get {} failed, error:{}".format(file_key, ex))
+        object_str = ""
     config_json = json.loads(object_str)
     return config_json
 
@@ -418,11 +423,11 @@ def handle_stream_message(stream_message):
     logging.info('file_path {}'.format(file_path))
     logging.info('file_list {}'.format(file_list))
 
-    for ps_result_path in file_list:
-        if "config.json" in ps_result_path:
-            logging.info("reload config file: {}".format(ps_result_path))
-            ps_config = load_config(ps_result_path)
-
+    global ps_config
+    for file_name in file_list:
+        if MANDATORY_ENV_VARS['PS_CONFIG'] in file_name:
+            logging.info("reload config file: {}".format(file_name))
+            ps_config = load_config(file_name)
 
 
 def parse_stream_message(stream_message):
@@ -470,9 +475,8 @@ def init():
     logging.info('redis status is {}'.format(rCache.connection_status()))
 
     global ps_config
-    ps_file_path = "system/personalize-data/ps-config/config.json"
+    ps_file_path = "system/personalize-data/ps-config/ps_config.json"
     ps_config = load_config(ps_file_path)
-
 
     global personalize_events
     personalize_events = boto3.client(service_name='personalize-events', region_name=MANDATORY_ENV_VARS['AWS_REGION'])

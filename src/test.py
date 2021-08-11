@@ -2,6 +2,25 @@ import json
 import os
 import pickle
 
+testVar = "this is empty str"
+testMap = {}
+
+def testFunc():
+    global testVar
+    testVar = "test func"
+    global testMap
+    testMap['testKey'] = "testValuefunc"
+
+def testMapFunc():
+    print(testMap['testKey'])
+
+
+def init():
+    global testVar
+
+    global testMap
+    testMap['testKey'] = "testValueinit"
+
 
 if __name__ == "__main__":
 
@@ -27,9 +46,10 @@ if __name__ == "__main__":
         'PORTRAIT_SERVICE_ENDPOINT': 'http://portrait:5300'
     }
 
-    if 'REDIS_PORT'  in MANDATORY_ENV_VARS:
-        print(True)
-    else:
-        print(False)
-    print(os.environ.get('LOCAL_GIT_DIRECTORY'))
+    init()
+    testMapFunc()
+    testFunc()
+    testMapFunc()
+
+
 
