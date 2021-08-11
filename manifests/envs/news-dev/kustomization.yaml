@@ -55,8 +55,8 @@ images:
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/recall-plugin
   newTag: news-21ccc228a902ba0e29a55ca6a534b25d8bfa00be
 - name: rs/retrieve
-  newName: 466154167985.dkr.ecr.ap-southeast-1.amazonaws.com/rs/retrieve
-  newTag: 8adbe6facf7f1b00d194408e89cf87e1daefc830
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/retrieve
+  newTag: 4f265597e91448fbcea2a6f2010e57c66791e066
 - name: rs/ui
   newName: public.ecr.aws/t8u1z3c8/rs/ui
   newTag: latest
