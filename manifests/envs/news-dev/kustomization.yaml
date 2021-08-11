@@ -34,8 +34,8 @@ images:
   newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/filter-plugin
   newTag: news-7a1145bcddd0a213781aac145dc671f0c8837ed6
 - name: rs/loader
-  newName: public.ecr.aws/t8u1z3c8/rs/loader
-  newTag: latest
+  newName: 466154167985.dkr.ecr.ap-northeast-1.amazonaws.com/rs/loader
+  newTag: 2bca7458ffa9257dab435b57fd0c3f6f5b778c00
 - name: rs/portrait
   newName: public.ecr.aws/t8u1z3c8/rs/portrait
   newTag: latest
