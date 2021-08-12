@@ -144,18 +144,20 @@ class ServiceImpl:
     def recall_by_personalize(self, news_ids, recall_wrap, recall_items, multiple_shot_record):
         #调用AWS Personalize Sims Recipe, 根据最近阅读记录做召回
         # 1. ps_sims
+        logging.info("recall by personalize process ...")
         topn_wrap = recall_wrap['config']['mt_topn']
         weights = recall_wrap['config']['pos_weights']
         ps_method = recall_wrap['config']['ps_mt']
         ps_config = recall_wrap['ps_config']
         for news_id in news_ids:
+            logging.info("news_id: {}".format(news_id))
             response = self.personalize_runtime.get_recommendations(
                 campaignArn=ps_config['CampaignArn'],
                 itemId=news_id,
                 numResults=topn_wrap[ps_method]
             )
             item_list_ids = [item['itemId'] for item in response['itemList']]
-
+            logging.info("recall item id:{}".format(item_list_ids))
             single_recall_result = {}
             current_list_with_score = []
 
@@ -166,6 +168,7 @@ class ServiceImpl:
             single_recall_result['method'] = ps_method
             single_recall_result['list'] = current_list_with_score
             logging.info("ps-sims method find {} candidates".format(len(current_list_with_score)))
+            logging.info("single_recall_result:{}".format(single_recall_result))
             recall_items.append(single_recall_result)
 
 
@@ -185,6 +188,7 @@ class ServiceImpl:
         # self.recall_by_portrait(user_portrait, recall_wrap, recall_items, multiple_shot_record)
 
         # 根据personalize-sims做召回
+        logging.info(MANDATORY_ENV_VARS['METHOD'])
         if MANDATORY_ENV_VARS['METHOD'] == "ps-sims":
             self.recall_by_personalize(news_ids, recall_wrap, recall_items, multiple_shot_record)
 
@@ -233,6 +237,7 @@ class ServiceImpl:
 
 def init():
     # Check out environments
+    logging.info("recall plugin service implementation start...")
     for var in MANDATORY_ENV_VARS:
         if var not in os.environ:
             logging.error("Mandatory variable {%s} is not set, using default value {%s}.", var, MANDATORY_ENV_VARS[var])
