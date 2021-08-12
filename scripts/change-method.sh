@@ -52,18 +52,21 @@ if [ $METHOD = "ps-complete" ]
 then
     solution_name="UserPersonalizeSolution"
     campaign_name="gcr-rs-${Stage}-${SCENARIO}-UserPersonalize-campaign"
+    campaign_arn="arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:campaign/${campaign_name}"
+    solution_version_arn=$(aws personalize describe-campaign --campaign-arn ${campaign_arn} | jq '.campaign.solutionVersionArn' -r)
 elif [ $METHOD = "ps-rank" ]
 then
     solution_name="rankingSolution"
     campaign_name="gcr-rs-${Stage}-${SCENARIO}-ranking-campaign"
+    campaign_arn="arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:campaign/${campaign_name}"
+    solution_version_arn=$(aws personalize describe-campaign --campaign-arn ${campaign_arn} | jq '.campaign.solutionVersionArn' -r)
 elif [ $METHOD = "ps-sims" ]
 then
     solution_name="simsSolution"
     campaign_name="gcr-rs-${Stage}-${SCENARIO}-sims-campaign"
+    campaign_arn="arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:campaign/${campaign_name}"
+    solution_version_arn=$(aws personalize describe-campaign --campaign-arn ${campaign_arn} | jq '.campaign.solutionVersionArn' -r)
 fi
-
-campaign_arn="arn:aws:personalize:${REGION}:${AWS_ACCOUNT_ID}:campaign/${campaign_name}"
-solution_version_arn=$(aws personalize describe-campaign --campaign-arn ${campaign_arn} | jq '.campaign.solutionVersionArn' -r)
 
 config_file_path=${curr_dir}/../sample-data/system/personalize-data/ps-config/ps_config.json
 
@@ -88,7 +91,12 @@ then
   
   echo "------sync ps_config.json to s3-------"
   aws s3 cp ${config_file_path} s3://${BUCKET_BUILD}/${PREFIX}/system/personalize-data/ps-config/ps_config.json
-
+  aws s3 cp ${config_file_path} s3://${BUCKET_BUILD}/${PREFIX}/notification/ps-result/ps_config.json
+  
+  echo "------notice online part-------"
+  dns_name=$(kubectl get svc istio-ingressgateway-news-dev -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  curl -X POST -d '{"message": {"file_type": "ps-result","file_path": "sample-data-news/notification/ps-result/","file_name": ["ps_config.json"]}}' -H "Content-Type:application/json" http://${dns_name}/loader/notice
+            
 fi
 
 
@@ -101,13 +109,6 @@ sed -e "s@$old_method@$METHOD@g" -i $env_config_path
 
 echo "------push code to github-------"
 git pull
-# if [ $METHOD != "customer" ]
-# then 
-#   git add ${config_file_path}
-#   git add ${env_config_path}
-# else
-#   git add ${env_config_path}
-# fi
 git add ${config_file_path}
 git add ${env_config_path}
 git commit -m "change method to ${METHOD}"
