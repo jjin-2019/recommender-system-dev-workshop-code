@@ -215,6 +215,13 @@
                 "ecr:Get*"
             ],
             "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:*"
+            ],
+            "Resource": "*"
         }
     ]
 }
