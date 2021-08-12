@@ -10,9 +10,9 @@
   "EventTrackerArn": "arn:aws:personalize:ap-northeast-1:466154167985:event-tracker/2fb1d6e3",
   "EventTrackerId": "c27682b5-f3da-415f-af87-1aff5974322c",
   "EventType": "CLICK",
-  "SolutionName": "UserPersonalizeSolution",
-  "SolutionVersionArn": "arn:aws:personalize:ap-northeast-1:466154167985:solution/UserPersonalizeSolution/33e72f60",
-  "CampaignName": "gcr-rs-dev-workshop-news-UserPersonalize-campaign",
-  "CampaignArn": "arn:aws:personalize:ap-northeast-1:466154167985:campaign/gcr-rs-dev-workshop-news-UserPersonalize-campaign",
+  "SolutionName": "rankingSolution",
+  "SolutionVersionArn": "arn:aws:personalize:ap-northeast-1:466154167985:solution/rankingSolution/2823a276",
+  "CampaignName": "gcr-rs-dev-workshop-news-ranking-campaign",
+  "CampaignArn": "arn:aws:personalize:ap-northeast-1:466154167985:campaign/gcr-rs-dev-workshop-news-ranking-campaign",
   "TrainingMode": "UPDATE"
 }
