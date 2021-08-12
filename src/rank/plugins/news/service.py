@@ -82,6 +82,8 @@ class Rank(service_pb2_grpc.RankServicer):
         json_file_list = [MANDATORY_ENV_VARS['PS_CONFIG']]
         self.reload_json_type(local_data_folder, json_file_list)
 
+        self.personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+
     def reload_action_model(self, file_path, file_list):
         logging.info('reload_embedding_files start')
         for file_name in file_list:
@@ -281,7 +283,7 @@ class Rank(service_pb2_grpc.RankServicer):
     def generate_rank_result_from_personalize(self, user_id, recall_result):
         logging.info('generate_rank_result using personalize rank model start')
         item_list = [str(int(recall_item)) for recall_item in recall_result]
-        response = personalize_runtime.get_personalized_ranking(
+        response = self.personalize_runtime.get_personalized_ranking(
             campaignArn=self.ps_config['CampaignArn'],
             inputList=item_list,
             userId=user_id
@@ -380,9 +382,6 @@ def init():
             logging.error("Mandatory variable {%s} is not set, using default value {%s}.", var, MANDATORY_ENV_VARS[var])
         else:
             MANDATORY_ENV_VARS[var]=os.environ.get(var)
-
-    global personalize_runtime
-    personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
 
 
 def serve(plugin_name):

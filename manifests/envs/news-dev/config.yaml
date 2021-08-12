@@ -14,6 +14,6 @@ data:
   user_record_file_path: 'sample-data-news/system/ingest-data/user/'
   click_record_bucket: 'aws-gcr-rs-sol-dev-workshop-ap-northeast-1-466154167985'
   local_data_folder: '/rs-data/news-dev/'
-  method: "ps-complete"
+  method: "ps-sims"
   
   

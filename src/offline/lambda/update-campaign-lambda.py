@@ -45,7 +45,7 @@ def do_handler(event, context):
     response = personalize.update_campaign(
         campaignArn=campaign_arn,
         solutionVersionArn=solution_version_arn,
-        minProvisionedTPS=10
+        minProvisionedTPS=1
     )
 
     campaign_arn = response['campaignArn']

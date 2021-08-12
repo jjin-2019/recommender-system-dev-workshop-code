@@ -6,16 +6,6 @@ import json
 import itertools
 import boto3
 
-MANDATORY_ENV_VARS = {
-    'AWS_REGION': 'ap-northeast-1',
-    'S3_BUCKET': 'aws-gcr-rs-sol-dev-workshop-ap-northeast-1-466154167985',
-    'S3_PREFIX': 'sample-data',
-    'METHOD': "ps-complete"
-}
-
-personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
-ps_config = {}
-
 logging.basicConfig(level=logging.INFO)
 
 class ServiceImpl:
@@ -143,18 +133,22 @@ class ServiceImpl:
     def recall_by_personalize(self, news_ids, recall_wrap, recall_items, multiple_shot_record):
         #调用AWS Personalize Sims Recipe, 根据最近阅读记录做召回
         # 1. ps_sims
+        logging.info("recall by personalize process ...")
         topn_wrap = recall_wrap['config']['mt_topn']
         weights = recall_wrap['config']['pos_weights']
         ps_method = recall_wrap['config']['ps_mt']
         ps_config = recall_wrap['ps_config']
+        aws_region = recall_wrap['aws_region']
+        personalize_runtime = boto3.client('personalize-runtime', aws_region)
         for news_id in news_ids:
+            logging.info("news_id: {}".format(news_id))
             response = personalize_runtime.get_recommendations(
                 campaignArn=ps_config['CampaignArn'],
                 itemId=news_id,
                 numResults=topn_wrap[ps_method]
             )
             item_list_ids = [item['itemId'] for item in response['itemList']]
-
+            logging.info("recall item id:{}".format(item_list_ids))
             single_recall_result = {}
             current_list_with_score = []
 
@@ -165,6 +159,7 @@ class ServiceImpl:
             single_recall_result['method'] = ps_method
             single_recall_result['list'] = current_list_with_score
             logging.info("ps-sims method find {} candidates".format(len(current_list_with_score)))
+            logging.info("single_recall_result:{}".format(single_recall_result))
             recall_items.append(single_recall_result)
 
 
@@ -184,7 +179,8 @@ class ServiceImpl:
         # self.recall_by_portrait(user_portrait, recall_wrap, recall_items, multiple_shot_record)
 
         # 根据personalize-sims做召回
-        if MANDATORY_ENV_VARS['METHOD'] == "ps-sims":
+        logging.info(config_dict['method'])
+        if config_dict['method'] == "ps-sims":
             self.recall_by_personalize(news_ids, recall_wrap, recall_items, multiple_shot_record)
 
         # recall_merge_cnt = 100
@@ -228,16 +224,3 @@ class ServiceImpl:
 
         logging.info('Recall has done & return -> {}'.format(recall_result))
         return recall_result
-
-
-def init():
-    # Check out environments
-    for var in MANDATORY_ENV_VARS:
-        if var not in os.environ:
-            logging.error("Mandatory variable {%s} is not set, using default value {%s}.", var, MANDATORY_ENV_VARS[var])
-        else:
-            MANDATORY_ENV_VARS[var]=os.environ.get(var)
-
-    global personalize_runtime
-    personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
-

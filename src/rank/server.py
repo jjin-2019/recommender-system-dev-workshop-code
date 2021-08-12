@@ -189,7 +189,7 @@ def read_pickle_message():
 def read_json_message():
     logging.info('read_json_message start')
     # Read existed stream message
-    stream_message = rCache.read_strem_message(json_type)
+    stream_message = rCache.read_stream_message(json_type)
     if stream_message:
         logging.info("Handle existed stream json_type message")
         handle_stream_message(stream_message)

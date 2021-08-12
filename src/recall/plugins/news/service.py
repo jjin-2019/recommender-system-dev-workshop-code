@@ -49,7 +49,10 @@ MANDATORY_ENV_VARS = {
     'REDIS_PORT': 6379,
 
     'PORTRAIT_SERVICE_ENDPOINT': 'http://portrait:5300',
-    'PS_CONFIG': 'ps_config.json'
+
+    'PS_CONFIG': 'ps_config.json',
+    'AWS_REGION': 'ap-northeast-1',
+    'METHOD': "ps-complete"
 }
 
 embedding_type = 'embedding'
@@ -284,6 +287,7 @@ class Recall(service_pb2_grpc.RecallServicer):
         # 配置参数
         config_dict = {}
         recall_wrap = {}
+        ps_dict = {}
         recall_wrap['content'] = self.news_id_news_property_dict
         recall_wrap['dict_wrap'] = {}
         recall_wrap['dict_wrap']['type'] = self.news_type_news_ids_dict
@@ -292,6 +296,8 @@ class Recall(service_pb2_grpc.RecallServicer):
         recall_wrap['dict_wrap']['keywords'] = self.keywords_news_ids_dict
         recall_wrap['config'] = self.recall_config
         recall_wrap['ps_config'] = self.ps_config
+        recall_wrap['aws_region'] = MANDATORY_ENV_VARS['AWS_REGION']
+        config_dict['method'] = MANDATORY_ENV_VARS['METHOD']
         config_dict['recall_wrap'] = recall_wrap
         config_dict['user_portrait'] = user_portrait_result
         # user_click_records[reviewerID] = pos_list
