@@ -336,7 +336,9 @@ Resources:
                   "bucket.$": "$.Bucket",
                   "prefix.$": "$.S3Prefix",
                   "file_list": [
-                   "system/item-data/item.csv"
+                   "system/item-data/item.csv",
+                   "system/personalize-data/data/personalize_item.csv",
+                   "system/personalize-data/ps-config/ps_config.json"
                   ]
                 }
               },
@@ -353,7 +355,7 @@ Resources:
                 "Input": {
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "ImageName": "rs/news-add-item-batch",
-                  "ContainerArguments.$": "States.Array('--bucket', $.Bucket, '--prefix', $.S3Prefix, '--region', '${AWS::Region}')",
+                  "ContainerArguments.$": "States.Array('--bucket', $.Bucket, '--prefix', $.S3Prefix, '--region', '${AWS::Region}', '--method', $.Method)",
                   "InstanceType": "ml.m5.xlarge"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-SMProcessingStepFunc",
@@ -383,7 +385,9 @@ Resources:
                     "bucket.$": "$.Bucket",
                     "prefix.$": "$.S3Prefix",
                     "file_list": [
-                     "system/user-data/user.csv"
+                     "system/user-data/user.csv",
+                     "system/personalize-data/data/personalize_user.csv",
+                     "system/personalize-data/ps-config/ps_config.json"
                     ]
                   }
                 },
@@ -400,7 +404,7 @@ Resources:
                   "Input": {
                     "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                     "ImageName": "rs/news-add-user-batch",
-                    "ContainerArguments.$": "States.Array('--bucket', $.Bucket, '--prefix', $.S3Prefix, '--region', '${AWS::Region}')",
+                    "ContainerArguments.$": "States.Array('--bucket', $.Bucket, '--prefix', $.S3Prefix, '--region', '${AWS::Region}', '--method', $.Method)",
                     "InstanceType": "ml.m5.xlarge"
                   },
                   "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-SMProcessingStepFunc",
