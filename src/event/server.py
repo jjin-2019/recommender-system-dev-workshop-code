@@ -362,6 +362,7 @@ def start_step_funcs(trainReq):
                 'change_type': trainReq.change_type,
                 'Bucket': bucket,
                 'S3Prefix': key_prefix,
+                'Method': MANDATORY_ENV_VARS['METHOD'],
                 'ps_config': ps_config_str
             })
         )
@@ -491,13 +492,13 @@ def init():
 
 
 def get_step_funcs_name():
-    if MANDATORY_ENV_VARS['MODEL'] == 'ps-complete':
-        step_funcs_name = "rs-dev-workshop-News-OverallStepFunc-Personalize"
-    else:
-        step_funcs_name = "rs-dev-workshop-News-OverallStepFunc"
-    return step_funcs_name
+    # if MANDATORY_ENV_VARS['MODEL'] == 'ps-complete':
+    #     step_funcs_name = "rs-dev-workshop-News-OverallStepFunc-Personalize"
+    # else:
+    #     step_funcs_name = "rs-dev-workshop-News-OverallStepFunc"
+    # return step_funcs_name
 
-    # namespace = MANDATORY_ENV_VARS['POD_NAMESPACE']
+    namespace = MANDATORY_ENV_VARS['POD_NAMESPACE']
     # known_mappings = {
     #     'rs-news-dev-ns': 'rs-dev-News-OverallStepFunc',
     #     'rs-movie-dev-ns': 'rs-dev-Movie-OverallStepFunc',
@@ -507,17 +508,17 @@ def get_step_funcs_name():
     # }
     # step_funcs_name = known_mappings.get(namespace, 'rsdemo-News-OverallStepFunc')
     #
-    # # change for dev-workshop
-    # s3bucket = MANDATORY_ENV_VARS['S3_BUCKET']
-    # if '-dev-workshop-' in s3bucket and namespace == 'rs-news-dev-ns':
-    #     step_funcs_name = 'rs-dev-workshop-News-OverallStepFunc'
-    #
+    # change for dev-workshop
+    s3bucket = MANDATORY_ENV_VARS['S3_BUCKET']
+    if '-dev-workshop-' in s3bucket and namespace == 'rs-news-dev-ns':
+        step_funcs_name = 'rs-dev-workshop-News-OverallStepFunc'
+
     # # change for personalize plugin
     # if MANDATORY_ENV_VARS['USE_PERSONALIZE_PLUGIN'] == "True":
     #     step_funcs_name = "rs-dev-workshop-News-OverallStepFunc-Personalize"
     #
-    # logging.info("get_step_funcs_name return: namespace: {}, step funcs name: {}".format(namespace, step_funcs_name))
-    # return step_funcs_name
+    logging.info("get_step_funcs_name return: namespace: {}, step funcs name: {}".format(namespace, step_funcs_name))
+    return step_funcs_name
 
 
 if __name__ == "__main__":

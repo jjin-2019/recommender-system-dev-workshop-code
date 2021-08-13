@@ -1,9 +1,12 @@
 import argparse
+import json
 import logging
 import os
 import pickle
 import re
 import argparse
+import time
+
 import boto3
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
@@ -42,6 +45,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--bucket', type=str)
 parser.add_argument('--prefix', type=str)
 parser.add_argument("--region", type=str, help="aws region")
+parser.add_argument("--method", type=str)
 args, _ = parser.parse_known_args()
 print("args:", args)
 
@@ -51,14 +55,22 @@ if args.region:
 
 bucket = args.bucket
 prefix = args.prefix
+method = args.method
 
 if prefix.endswith("/"):
     prefix = prefix[:-1]
 
 print("bucket={}".format(bucket))
 print("prefix='{}'".format(prefix))
+print("method={}".format(method))
 
 s3client = boto3.client('s3')
+personalize = boto3.client('personalize', args.region)
+sts = boto3.client('sts')
+
+get_caller_identity_response = sts.get_caller_identity()
+aws_account_id = get_caller_identity_response["Account"]
+print("aws_account_id:{}".format(aws_account_id))
 
 out_s3_path = "s3://{}/{}/feature/content/inverted-list".format(bucket, prefix)
 
@@ -70,6 +82,14 @@ file_name_list = ['user.csv']
 s3_folder = '{}/system/user-data'.format(prefix)
 sync_s3(file_name_list, s3_folder, local_folder)
 
+#创建UserDatasetImportJob
+ps_user_file_name_list = ['personalize_user.csv']
+ps_user_s3_folder = '{}/system/personalize-data/data'.format(prefix)
+sync_s3(ps_user_file_name_list, ps_user_s3_folder, local_folder)
+
+ps_config_file_name = ['ps_config.json']
+ps_config_s3_folder = '{}/system/personalize-data/ps-config'.format(prefix)
+sync_s3(ps_config_file_name, ps_config_s3_folder, local_folder)
 
 def add_user_batch():
     lbe = LabelEncoder()
@@ -99,4 +119,72 @@ def add_user_batch():
                 "{}/feature/action/{}".format(prefix, file_name.split('/')[-1]))
 
 
-add_user_batch()
+def get_ps_config_from_s3():
+    infile = open('info/ps_config.json')
+    ps_config = json.load(infile)
+    infile.close()
+    return ps_config
+
+def get_dataset_group_arn(dataset_group_name):
+    response = personalize.list_dataset_groups()
+    for dataset_group in response["datasetGroups"]:
+        if dataset_group["name"] == dataset_group_name:
+            return dataset_group["datasetGroupArn"]
+
+def get_dataset_arn(dataset_group_arn, dataset_name):
+    response = personalize.list_datasets(
+        datasetGroupArn=dataset_group_arn
+    )
+    for dataset in response["datasets"]:
+        if dataset["name"] == dataset_name:
+            return dataset["datasetArn"]
+
+def create_user_dataset_import_job():
+    ps_config = get_ps_config_from_s3()
+    dataset_group_arn = get_dataset_group_arn(ps_config['DatasetGroupName'])
+    dataset_arn = get_dataset_arn(dataset_group_arn, ps_config['UserDatasetName'])
+    response = personalize.create_dataset_import_job(
+        jobName="user-dataset-import-job-{}".format(int(time.time())),
+        datasetArn=dataset_arn,
+        dataSource={
+            'dataLocation': "s3://{}/{}/system/personalize-data/data/personalize_user.csv".format(bucket, prefix)
+        },
+        roleArn="arn:aws:iam::{}:role/gcr-rs-personalize-role".format(aws_account_id)
+    )
+
+    user_dataset_import_job_arn = response['datasetImportJobArn']
+    print("user_dataset_import_job_arn:{}".format(user_dataset_import_job_arn))
+
+    # check status
+    max_time = time.time() + 3 * 60 * 60
+    while time.time() < max_time:
+        describe_dataset_import_job_response = personalize.describe_dataset_import_job(
+            datasetImportJobArn=user_dataset_import_job_arn
+        )
+        status = describe_dataset_import_job_response["datasetImportJob"]['status']
+        print("DatasetImportJob: {}".format(status))
+
+        if status == "ACTIVE":
+            print("UserDatasetImportJob Create Successfully!")
+            break
+        elif status == "CREATE FAILED":
+            print("UserDatasetImportJob Create failed!")
+            break
+        else:
+            time.sleep(60)
+
+    print("UserDatasetImportJob Exceed Max Create Time!")
+
+
+def user_new():
+    if method == "customer":
+        add_user_batch()
+    elif method == "ps-complete":
+        create_user_dataset_import_job()
+    else:
+        add_user_batch()
+        create_user_dataset_import_job()
+
+
+user_new()
+

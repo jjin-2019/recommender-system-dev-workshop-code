@@ -65,13 +65,52 @@ Resources:
                 "Input": {
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                   "Bucket.$": "$.Bucket",
-                  "S3Prefix.$": "$.S3Prefix"
+                  "S3Prefix.$": "$.S3Prefix",
+                  "Method.$": "$.Method"
                 },
                 "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-AddItemBatchStepFunc",
                 "Name.$": "States.Format('{}', $$.Execution.Name)"
               },
               "ResultPath": "$.AddItemBatch",
-              "Next": "Item feature update batch"
+              "Next": "Method Choice for Training Personalize Model"
+            },
+            "Method Choice for Training Personalize Model": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Method",
+                  "StringEquals": "customer",
+                  "Next": "Item feature update batch"
+                }
+              ],
+              "Default": "Train Personalize Model"
+            },
+            "Train Personalize Model": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::states:startExecution.sync:2",
+              "Parameters": {
+                "Input": {
+                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+                  "Bucket.$": "$.Bucket",
+                  "S3Prefix.$": "$.S3Prefix",
+                  "Method.$": "$.Method",
+                  "ps_config.$": "$.ps_config"
+                },
+                "StateMachineArn": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:rs-${Stage}-News-TrainModelStepFunc-Personalize",
+                "Name.$": "States.Format('ot{}', $$.Execution.Name)"
+              },
+              "Next": "Method Choice for Training Customer Model"
+            },
+            "Method Choice for Training Customer Model": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Method",
+                  "StringEquals": "ps-complete",
+                  "Next": "Succeed"
+                }
+              ],
+              "Default": "Item feature update batch"
             },
             "Item feature update batch": {
               "Type": "Task",
