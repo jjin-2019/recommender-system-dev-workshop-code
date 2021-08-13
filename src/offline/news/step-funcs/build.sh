@@ -46,8 +46,6 @@ S3Prefix=sample-data-news
 PARAMETER_OVERRIDES="Bucket=$BUCKET S3Prefix=$S3Prefix Stage=$Stage"
 echo PARAMETER_OVERRIDES:$PARAMETER_OVERRIDES
 
-if [ $Method == 'customer' ]; then
-
 
 
 all_stepfuncs=(
