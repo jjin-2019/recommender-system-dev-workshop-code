@@ -36,6 +36,8 @@ MANDATORY_ENV_VARS = {
     'PORTRAIT_PORT': '5300',
     'RECALL_HOST': 'recall',
     'RECALL_PORT': '5500',
+    'FILTER_HOST': 'filter',
+    'FILTER_PORT': 5200,
     'AWS_REGION': 'ap-southeast-1',
     'S3_BUCKET': 'aws-gcr-rs-sol-demo-ap-southeast-1-522244679887',
     'S3_PREFIX': 'sample-data',
@@ -268,8 +270,7 @@ def start_train_post(trainReq: TrainRequest):
     return res
 
 
-@api_router.post('/api/v1/event/st'
-                 'art_update', response_model=StateMachineStatusResponse, tags=["event"])
+@api_router.post('/api/v1/event/start_update', response_model=StateMachineStatusResponse, tags=["event"])
 def start_update_post(trainReq: TrainRequest):
     if trainReq.change_type not in ['MODEL', 'CONTENT', 'ACTION']:
         raise HTTPException(status_code=405, detail="invalid change_type")
@@ -339,7 +340,10 @@ def send_event_to_personalize(data):
     except Exception as e:
         logging.error(repr(e))
         raise RSAWSServiceException(repr(e))
-    return "OK"
+    host = MANDATORY_ENV_VARS['FILTER_HOST']
+    port = MANDATORY_ENV_VARS['FILTER_PORT']
+    filter_svc_url = "http://{}:{}/filter/ps_process".format(host, port)
+    return send_post_request(filter_svc_url, data)
 
 
 def start_step_funcs(trainReq):

@@ -1,3 +1,4 @@
+import boto3
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -22,13 +23,21 @@ app = FastAPI()
 MANDATORY_ENV_VARS = {
     'REDIS_HOST': 'localhost',
     'REDIS_PORT': 6379,
-    'FILTER_PORT': 5200
+    'FILTER_PORT': 5200,
+    'AWS_REGION': 'ap-northeast-1'
     }
 
 # Notice channel
 rank_notice_to_filter='rank_notice_to_filter'
 sleep_interval = 10 #second
 pickle_type = 'inverted-list'
+personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+ps_config = {}
+json_type = 'ps-result'
+
+class PsData(BaseModel):
+    user_id: str
+    clicked_item_ids: list = []
 
 def xasync(f):
     def wrapper(*args, **kwargs):
@@ -109,6 +118,30 @@ def get_recommend_data(userId: str, recommendType: str):
         }
 
 
+@app.post('/filter/ps_process', tags=['ps_process'])
+def generate_ps_recommend(psData: PsData):
+    logging.info("Start generate recommend from AWS Personalize...")
+    user_id = psData.user_id
+    reqDicts = any_pb2.Any()
+    reqDicts.value = json.dumps({
+        'user_id': user_id
+    }).encode('utf-8')
+
+    personalizeProcessRequest = service_pb2.PersonalizeProcessRequest(apiVersion='v1', metadata='Filter', type='PersonalizeResult')
+    personalizeProcessRequest.dicts.Pack(reqDicts)
+    channel = grpc.insecure_channel('localhost:50051')
+    stub = service_pb2_grpc.FilterStub(channel)
+    response = stub.PersonalizeProcess(personalizeProcessRequest)
+
+    results = any_pb2.Any()
+    response.results.Unpack(results)
+
+    if response.code == 0:
+        logging.info("personalize process succeed, user_id {}".format(user_id))
+    else:
+        logging.info("personalize process failed, user_id {}, description {}".format(user_id, response.description))
+
+
 @xasync
 def poll_rank_notice_to_filter():
     logging.info('poll_rank_notice_to_filter start')
@@ -173,7 +206,28 @@ def read_pickle_message():
         except redis.ConnectionError:
             localtime = time.asctime( time.localtime(time.time()))
             logging.info('get ConnectionError, time: {}'.format(localtime))            
-        time.sleep( sleep_interval )        
+        time.sleep( sleep_interval )
+
+
+@xasync
+def read_json_message():
+    logging.info('read_json_message start')
+    # Read existed stream message
+    stream_message = rCache.read_stream_message(json_type)
+    if stream_message:
+        logging.info("Handle existed stream json_type message")
+        handle_stream_message(stream_message)
+    while True:
+        logging.info('wait for reading json_type message')
+        try:
+            stream_message = rCache.read_stream_message_block(json_type)
+            if stream_message:
+                handle_stream_message(stream_message)
+        except redis.ConnectionError:
+            localtime = time.asctime( time.localtime(time.time()))
+            logging.info('get ConnectionError, time: {}'.format(localtime))
+        time.sleep( sleep_interval )
+
 
 def handle_stream_message(stream_message):
     logging.info('get stream message from {}'.format(stream_message))
@@ -239,6 +293,22 @@ def wait_for_plugin_service():
             logging.info('wait for plugin startup')
             time.sleep( sleep_interval )
 
+
+def load_config(file_path):
+    s3_bucket = MANDATORY_ENV_VARS['S3_BUCKET']
+    s3_prefix = MANDATORY_ENV_VARS['S3_PREFIX']
+    file_key = '{}/{}'.format(s3_prefix, file_path)
+    s3 = boto3.resource('s3')
+    try:
+        object_str = s3.Object(s3_bucket, file_key).get()[
+            'Body'].read().decode('utf-8')
+    except Exception as ex:
+        logging.info("get {} failed, error:{}".format(file_key, ex))
+        object_str = "{}"
+    config_json = json.loads(object_str)
+    return config_json
+
+
 def init():
     # Check out environments
     for var in MANDATORY_ENV_VARS:
@@ -260,7 +330,11 @@ def init():
 
     read_stream_messages()
 
-
+    global personalize_runtime
+    personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+    global ps_config
+    ps_file_path = "system/personalize-data/ps-config/ps_config.json"
+    ps_config = load_config(ps_file_path)
 
 
 if __name__ == "__main__":

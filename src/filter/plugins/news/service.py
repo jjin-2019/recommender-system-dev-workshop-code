@@ -12,7 +12,7 @@ import random
 from random import sample
 import sys
 import time
-
+import boto3
 import glob
 
 from google.protobuf import descriptor
@@ -46,12 +46,17 @@ MANDATORY_ENV_VARS = {
     'RECOMMEND_ITEM_COUNT': 20,
     'DUPLICATE_INTERVAL': 10, #min
     'PORTRAIT_SERVICE_ENDPOINT': 'http://portrait:5300',
-    'RANK_MODEL': 'dkn'
+    'RANK_MODEL': 'dkn',
+    'PS_CONFIG': 'ps_config.json',
+    'AWS_REGION': 'ap-northeast-1',
+    'S3_BUCKET': 'aws-gcr-rs-sol-dev-workshop-ap-northeast-1-466154167985',
+    'S3_PREFIX': 'sample-data'
 
 }
 
 user_id_filter_dict='user_id_filter_dict'
 user_id_recommended_dict='user_id_recommended_dict'
+user_id_personalize_dict='user_id_personalize_dict'
 
 tRecommend = 'recommend'
 tDiversity = 'diversity'
@@ -60,6 +65,9 @@ lCfgCompleteType = ['news_story', 'news_culture', 'news_entertainment', 'news_sp
 lCfgFilterType = ['news_game']
 hot_topic_count_array = [2,3]
 pickle_type = 'inverted-list'
+json_type = 'ps-result'
+
+personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
 
 # lastUpdate
 localtime = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
@@ -78,6 +86,11 @@ class Filter(service_pb2_grpc.FilterServicer):
 
         self.reload_pickle_type(local_data_folder, file_list, False)
 
+        json_file_list = [MANDATORY_ENV_VARS['PS_CONFIG']]
+        self.reload_json_type(local_data_folder, json_file_list)
+
+        self.personalize_runtime = boto3.client('personalize-runtime', MANDATORY_ENV_VARS['AWS_REGION'])
+
     def Reload(self, request, context):
         logging.info('Restart(self, request, context)...')
         requestMessage = Any()
@@ -92,6 +105,8 @@ class Filter(service_pb2_grpc.FilterServicer):
         self.check_files_ready(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list, 0)
         if file_type == pickle_type:
             self.reload_pickle_type(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list, True)
+        elif file_type == json_type:
+            self.reload_json_type(MANDATORY_ENV_VARS['LOCAL_DATA_FOLDER'], file_list)
         logging.info('Re-initial filter service.')
         commonResponse = service_pb2.CommonResponse(code=0, description='Re-initialled with success')
         return commonResponse 
@@ -135,6 +150,18 @@ class Filter(service_pb2_grpc.FilterServicer):
                 else:
                     logging.info('reload filter_config, file is empty') 
 
+    def reload_json_type(self, file_path, file_list):
+        logging.info('reload_json_type start')
+        for file_name in file_list:
+            json_path = file_path + file_name
+            logging.info('reload_json_type json_path {}'.format(json_path))
+            if MANDATORY_ENV_VARS['PS_CONFIG'] in json_path:
+                if os.path.isfile(json_path):
+                    logging.info('reload ps_config file {}'.format(json_path))
+                    self.ps_config = self.load_json(json_path)
+                else:
+                    logging.info('reload ps_config failed, file is empty')
+
     def check_files_ready(self, file_path, file_list, loop_count):
         logging.info('start check files are ready: path {}, file_list {}'.format(file_path, file_list))
         check_again_flag = False
@@ -160,7 +187,16 @@ class Filter(service_pb2_grpc.FilterServicer):
             infile.close()
             return dict
         else:
-            return {}                    
+            return {}
+
+    def load_json(self, file):
+        if os.path.isfile(file):
+            infile = open(file, 'rb')
+            dict = json.load(infile)
+            infile.close()
+            return dict
+        else:
+            return {}
 
     def Status(self, request, context):
         logging.info('Status(self, request, context)...')
@@ -186,7 +222,7 @@ class Filter(service_pb2_grpc.FilterServicer):
         request.dicts.Unpack(requestMessage)
         logging.info('Recieved notice requestMessage -> {}'.format(requestMessage))
         requestMessageJson = json.loads(requestMessage.value, encoding='utf-8')
-        # Retrieve request data        
+        # Retrieve request data
         user_id = requestMessageJson['user_id']
         rank_result = requestMessageJson['rank_result']
         recall_result = requestMessageJson['recall_result']
@@ -210,6 +246,35 @@ class Filter(service_pb2_grpc.FilterServicer):
 
         logging.info("filter process complete") 
         return filterProcessResponse
+
+    def PersonalizeProcess(self, request, context):
+        logging.info("personalize_process start")
+
+        requestMessage = Any()
+        request.dicts.Unpack(requestMessage)
+        logging.info('Received notice requestMessage -> {}'.format(requestMessage))
+        requestMessageJson = json.loads(requestMessage.value, encoding='utf-8')
+        # Retrieve request data
+        user_id = requestMessageJson['user_id']
+        logging.info('user_id -> {}'.format(user_id))
+
+        personalize_result = self.generate_personalize_result(user_id)
+
+        logging.info("personalize result {}".format(personalize_result))
+
+        personalizeProcessResponseValue = {
+            'user_id': user_id,
+            'personalize_result': personalize_result
+        }
+
+        personalizeProcessResponseAny = Any()
+        personalizeProcessResponseAny.value = json.dumps(personalizeProcessResponseValue).encode('utf-8')
+        personalizeProcessResponse = service_pb2.PersonalizeProcessResponse(code=0, description='rank process with success')
+        personalizeProcessResponse.results.Pack(personalizeProcessResponseAny)
+
+        logging.info("personalize process complete")
+        return personalizeProcessResponse
+
 
     def GetFilterData(self, request, context):
         logging.info('GetFilterData start')
@@ -246,7 +311,7 @@ class Filter(service_pb2_grpc.FilterServicer):
         logging.info("get filter data complete") 
         
 
-        return getFilterDataResponse 
+        return getFilterDataResponse
 
     def get_filter_recommend_result(self, user_id, recommend_type):
         logging.info('get_filter_recommend_result start!!')
@@ -623,6 +688,26 @@ class Filter(service_pb2_grpc.FilterServicer):
         logging.info('final existed_filter_record {}'.format(existed_filter_record))
         logging.info('filter_process completed')
 
+    def generate_personalize_result(self, user_id):
+        logging.info('generate_personalize_result start')
+
+        existed_personalize_record_redis = rCache.get_data_from_hash(user_id_personalize_dict, user_id)
+        logging.info('existed_filter_record {}'.format(existed_personalize_record_redis))
+        existed_personalize_record = []
+        # check if there is coldstart data, remove them:
+        if existed_personalize_record_redis:
+            existed_personalize_record = json.loads(existed_personalize_record_redis, encoding='utf-8')
+
+        new_personalize_record = self.generate_new_personalize_record(user_id)
+        logging.info('new_personalize_record {}'.format(new_personalize_record))
+
+        existed_personalize_record.insert(0, {calendar.timegm(time.gmtime()): new_personalize_record[str(user_id)]})
+
+        if rCache.load_data_into_hash(user_id_personalize_dict, user_id, json.dumps(existed_personalize_record).encode('utf-8')):
+            logging.info('Save personalize data into Redis with key : %s ', user_id)
+        logging.info('final existed_personalize_record {}'.format(existed_personalize_record))
+        logging.info('personalize_process completed')
+
     def get_dict_pos(self, key, dict_var):
         return list(dict_var.keys()).index(key)
 
@@ -765,6 +850,21 @@ class Filter(service_pb2_grpc.FilterServicer):
             dict_filter_result[str(user_id)] = update_user_result
             logging.info("--------------dict_filter_result:{}".format(dict_filter_result))
         return dict_filter_result
+
+    def generate_new_personalize_record(self, user_id):
+        dict_personalize_result = {}
+        # trigger personalize api
+        get_recommendations_response = personalize_runtime.get_recommendations(
+            campaignArn=self.ps_config['CampaignArn'],
+            userId=str(user_id),
+        )
+        result_list = get_recommendations_response['itemList']
+        recommend_result = {}
+        for item in result_list:
+            recommend_result[item['itemId']] = [item['itemId'], 'recommend', item['score'], "personalize|{}".format(str(item['score']))]
+        dict_personalize_result[str(user_id)] = recommend_result
+        logging.info("dict_personalize_result:{}".format(dict_personalize_result))
+        return dict_personalize_result
 
     def generate_new_filter_record_old(self, current_filter_record, recall_result, rank_result, user_portrait):
         ndivsersity = int(MANDATORY_ENV_VARS['N_DIVERSITY'])
