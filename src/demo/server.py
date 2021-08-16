@@ -163,8 +163,8 @@ def login(loginRequest: LoginRequest):
                 Key=MANDATORY_ENV_VARS['USER_RECORD_FILE_PATH'] + 'user_' + user_id + '_' + current_timestamp + '.csv',
                 Body=s3_body)
 
-        # call aws personalize addUser api
-        #call_personalize_add_user(user_id, temp_array[1])
+        #AddUser to AWS Personalize
+        call_personalize_add_user(user_id, temp_array[1])
 
         return response_success({
             "message": "Login as anonymous user!",

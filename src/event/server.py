@@ -297,21 +297,23 @@ def offline_status_get(exec_arn: str):
     return res
 
 
-# @api_router.post('/api/v1/event/add_user/{user_id}', response_model=SimpleResponse, tags=["event"])
-# def add_new_user(userEntity: UserEntity):
-#     logging.info("Add new user to AWS Personalize Service...")
-#     personalize_events.put_users(
-#         datasetArn=user_dataset_arn,
-#         users=[
-#             {
-#                 'userId': userEntity.user_id,
-#                 'properties': str({
-#                     'gender': userEntity.user_sex
-#                 })
-#             },
-#         ]
-#     )
-#     return gen_simple_response('OK')
+@api_router.post('/api/v1/event/add_user/{user_id}', response_model=SimpleResponse, tags=["event"])
+def add_new_user(userEntity: UserEntity):
+    logging.info("Add new user to AWS Personalize Service...")
+    user_id = userEntity.user_id
+    user_sex = userEntity.user_sex
+    personalize_events.put_users(
+        datasetArn=ps_config["UserDatasetArn"],
+        users=[
+            {
+                "userId": user_id,
+                "properties": json.dumps({
+                    "gender": user_sex
+                })
+            },
+        ]
+    )
+    return gen_simple_response('OK')
 
 
 def send_event_to_default(data):
