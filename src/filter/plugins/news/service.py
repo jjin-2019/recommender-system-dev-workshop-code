@@ -854,7 +854,7 @@ class Filter(service_pb2_grpc.FilterServicer):
     def generate_new_personalize_record(self, user_id):
         dict_personalize_result = {}
         # trigger personalize api
-        get_recommendations_response = personalize_runtime.get_recommendations(
+        get_recommendations_response = self.personalize_runtime.get_recommendations(
             campaignArn=self.ps_config['CampaignArn'],
             userId=str(user_id),
         )
